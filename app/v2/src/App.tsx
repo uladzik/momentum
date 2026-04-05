@@ -39,45 +39,44 @@ const QUOTES = [
   "Discipline is choosing what you want most over what you want now.",
 ]
 
-// ─── Day Arc ─────────────────────────────────────────────────────────────────
+// ─── Day Arc — uses stroke-dashoffset for smooth animation ───────────────────
 
 function DayArc({ pct }: { pct: number }) {
   const [mounted, setMounted] = useState(false)
-  useEffect(() => { const t = setTimeout(() => setMounted(true), 100); return () => clearTimeout(t) }, [])
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 150); return () => clearTimeout(t) }, [])
 
   const sz = 160, sw = 6, r = (sz - sw) / 2
-  const startAngle = -210
-  const toRad = (deg: number) => (deg * Math.PI) / 180
-  const cx = sz / 2, cy = sz / 2
-
-  function arcPath(p: number) {
-    const sweep = 240 * (Math.min(p, 100) / 100)
-    const end = startAngle + sweep
-    const x1 = cx + r * Math.cos(toRad(startAngle))
-    const y1 = cy + r * Math.sin(toRad(startAngle))
-    const x2 = cx + r * Math.cos(toRad(end))
-    const y2 = cy + r * Math.sin(toRad(end))
-    const large = sweep > 180 ? 1 : 0
-    return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`
-  }
+  // Full circle circumference, but we only use 240/360 of it
+  const fullCi = 2 * Math.PI * r
+  const trackLen = (240 / 360) * fullCi          // visible arc length
+  const gap = fullCi - trackLen                   // invisible portion
+  const offset = trackLen - (Math.min(pct, 100) / 100) * trackLen  // how much to hide
 
   return (
     <div className="relative" style={{ width: sz, height: sz }}>
-      <svg width={sz} height={sz} style={{ overflow: 'visible' }}>
+      <svg width={sz} height={sz}>
         <defs>
-          <linearGradient id="dayGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="dayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#f472b6" />
             <stop offset="100%" stopColor="#fb923c" />
           </linearGradient>
         </defs>
-        <path d={arcPath(100)} fill="none" stroke="var(--track)" strokeWidth={sw} strokeLinecap="round" />
-        <path d={arcPath(mounted ? pct : 0)} fill="none" stroke="url(#dayGrad)" strokeWidth={sw} strokeLinecap="round"
-          style={{ transition: 'all 1.8s cubic-bezier(.16,1,.3,1)' }} />
+        {/* Track */}
+        <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--track)" strokeWidth={sw}
+          strokeLinecap="round"
+          strokeDasharray={`${trackLen} ${gap}`}
+          style={{ transform: 'rotate(150deg)', transformOrigin: 'center' }} />
+        {/* Value — animates via dashoffset */}
+        <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="url(#dayGrad)" strokeWidth={sw}
+          strokeLinecap="round"
+          strokeDasharray={`${trackLen} ${gap}`}
+          strokeDashoffset={mounted ? offset : trackLen}
+          style={{ transform: 'rotate(150deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 1.6s cubic-bezier(.16,1,.3,1)' }} />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center" style={{ marginTop: 8 }}>
-        <span className="font-mono font-semibold tabular-nums" style={{ fontSize: 52, lineHeight: 1, background: 'linear-gradient(135deg,#f472b6,#fb923c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          {Math.round(pct)}
-        </span>
+        <AnimatedNumber value={mounted ? pct : 0} dec={0}
+          className="font-mono font-semibold tabular-nums"
+          style={{ fontSize: 52, lineHeight: 1, background: 'linear-gradient(135deg,#f472b6,#fb923c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
         <span className="font-mono" style={{ fontSize: 18, color: 'var(--text-3)', marginLeft: 2 }}>%</span>
       </div>
     </div>
@@ -105,6 +104,9 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 // ─── Stat Card ───────────────────────────────────────────────────────────────
 
 function StatCard({ label, k, color, pct, spark, sub }: { label: string; k: string; color: string; pct: number; spark: number[]; sub: string }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 200); return () => clearTimeout(t) }, [])
+
   return (
     <div className="rounded-2xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
       <div className="flex items-center justify-between mb-3">
@@ -114,9 +116,9 @@ function StatCard({ label, k, color, pct, spark, sub }: { label: string; k: stri
         </div>
         <Sparkline data={spark} color={color} id={k} w={50} h={18} />
       </div>
-      <AnimatedNumber value={pct} dec={1} suffix="%" className="font-mono font-semibold tabular-nums" style={{ fontSize: 28, color }} />
+      <AnimatedNumber value={mounted ? pct : 0} dec={1} suffix="%" className="font-mono font-semibold tabular-nums" style={{ fontSize: 28, color }} />
       <div style={{ height: 2, background: 'var(--track)', borderRadius: 99, margin: '8px 0 6px' }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 99, transition: 'width 1s cubic-bezier(.16,1,.3,1)' }} />
+        <div style={{ height: '100%', width: `${mounted ? pct : 0}%`, background: color, borderRadius: 99, transition: 'width 1.4s cubic-bezier(.16,1,.3,1)' }} />
       </div>
       <p style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--text-4)' }}>{sub}</p>
     </div>

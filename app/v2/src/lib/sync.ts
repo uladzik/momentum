@@ -141,11 +141,41 @@ export async function pullHabits(): Promise<Habit[] | null> {
     logMap[row.habit_id][row.date] = true
   })
 
-  return (habitRows as HabitRow[]).map(row => ({
+  const remote: Habit[] = (habitRows as HabitRow[]).map(row => ({
     id: row.id,
     name: row.name,
     h: logMap[row.id] ?? {},
   }))
+
+  // Merge with localStorage — union of habits and completion logs
+  try {
+    const local: Habit[] = JSON.parse(localStorage.getItem('mh') || '[]')
+    if (!local.length) return remote
+
+    const merged = new Map<number, Habit>()
+
+    // Start with remote
+    remote.forEach(h => merged.set(h.id, h))
+
+    // Merge local: add habits not in remote, union completion logs
+    local.forEach(localHabit => {
+      const existing = merged.get(localHabit.id)
+      if (existing) {
+        // Union of completion logs (local OR remote = done)
+        merged.set(localHabit.id, {
+          ...existing,
+          h: { ...localHabit.h, ...existing.h },
+        })
+      } else {
+        // Habit only exists locally — keep it and push to Supabase later
+        merged.set(localHabit.id, localHabit)
+      }
+    })
+
+    return Array.from(merged.values())
+  } catch {
+    return remote
+  }
 }
 
 // ─── Milestones ──────────────────────────────────────────────────────────────
