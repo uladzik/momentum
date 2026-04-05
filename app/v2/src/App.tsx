@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Command, Grid3x3, Zap, Edit3, Flame, BookOpen } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import './index.css'
 
 import { getTP, greet, emph, acc, tip } from '@/lib/time'
@@ -17,7 +18,6 @@ import { YearDots } from '@/components/widgets/YearDots'
 import { AmbientMode } from '@/components/widgets/AmbientMode'
 import { CommandPalette } from '@/components/widgets/CommandPalette'
 import { Logbook } from '@/components/widgets/Logbook'
-import { Dashboard } from '@/components/widgets/Dashboard'
 import type { TimeProgress } from '@/types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -40,18 +40,17 @@ const QUOTES = [
   "Discipline is choosing what you want most over what you want now.",
 ]
 
-// ─── Day Arc — uses stroke-dashoffset for smooth animation ───────────────────
+// ─── Day Arc ─────────────────────────────────────────────────────────────────
 
 function DayArc({ pct }: { pct: number }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { const t = setTimeout(() => setMounted(true), 150); return () => clearTimeout(t) }, [])
 
   const sz = 160, sw = 6, r = (sz - sw) / 2
-  // Full circle circumference, but we only use 240/360 of it
   const fullCi = 2 * Math.PI * r
-  const trackLen = (240 / 360) * fullCi          // visible arc length
-  const gap = fullCi - trackLen                   // invisible portion
-  const offset = trackLen - (Math.min(pct, 100) / 100) * trackLen  // how much to hide
+  const trackLen = (240 / 360) * fullCi
+  const gap = fullCi - trackLen
+  const offset = trackLen - (Math.min(pct, 100) / 100) * trackLen
 
   return (
     <div className="relative" style={{ width: sz, height: sz }}>
@@ -62,12 +61,10 @@ function DayArc({ pct }: { pct: number }) {
             <stop offset="100%" stopColor="#fb923c" />
           </linearGradient>
         </defs>
-        {/* Track */}
-        <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--track)" strokeWidth={sw}
+        <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--color-border)" strokeWidth={sw}
           strokeLinecap="round"
           strokeDasharray={`${trackLen} ${gap}`}
           style={{ transform: 'rotate(150deg)', transformOrigin: 'center' }} />
-        {/* Value — animates via dashoffset */}
         <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="url(#dayGrad)" strokeWidth={sw}
           strokeLinecap="round"
           strokeDasharray={`${trackLen} ${gap}`}
@@ -78,7 +75,7 @@ function DayArc({ pct }: { pct: number }) {
         <AnimatedNumber value={mounted ? pct : 0} dec={0}
           className="font-mono tabular-nums"
           style={{ fontSize: 44, lineHeight: 1, fontWeight: 200, background: 'linear-gradient(135deg,#f472b6,#fb923c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
-        <span className="font-mono" style={{ fontSize: 18, color: 'var(--text-3)', marginLeft: 2 }}>%</span>
+        <span className="font-mono text-muted-foreground" style={{ fontSize: 18, marginLeft: 2 }}>%</span>
       </div>
     </div>
   )
@@ -88,16 +85,14 @@ function DayArc({ pct }: { pct: number }) {
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
-    <button onClick={onChange} style={{
-      position: 'relative', width: 44, height: 24, borderRadius: 12, flexShrink: 0,
-      background: checked ? 'var(--text)' : 'var(--track)',
-      border: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.2s',
-    }}>
-      <div style={{
-        position: 'absolute', top: 2, width: 18, height: 18, borderRadius: 9,
-        background: checked ? 'var(--bg)' : 'var(--text-3)',
-        left: checked ? 22 : 3, transition: 'left 0.25s cubic-bezier(.16,1,.3,1), background 0.2s',
-      }} />
+    <button onClick={onChange} className={cn(
+      'relative flex-shrink-0 cursor-pointer rounded-full border border-border transition-colors',
+      checked ? 'bg-primary' : 'bg-muted'
+    )} style={{ width: 44, height: 24 }}>
+      <div className={cn(
+        'absolute top-[3px] h-[18px] w-[18px] rounded-full transition-all duration-200',
+        checked ? 'bg-primary-foreground left-[23px]' : 'bg-muted-foreground left-[3px]'
+      )} />
     </button>
   )
 }
@@ -109,19 +104,19 @@ function StatCard({ label, k, color, pct, spark, sub }: { label: string; k: stri
   useEffect(() => { const t = setTimeout(() => setMounted(true), 200); return () => clearTimeout(t) }, [])
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
+    <div className="rounded-xl p-4 bg-card border border-border">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-          <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>{label}</span>
+          <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
         </div>
         <Sparkline data={spark} color={color} id={k} w={50} h={18} />
       </div>
       <AnimatedNumber value={mounted ? pct : 0} dec={1} suffix="%" className="font-mono font-semibold tabular-nums" style={{ fontSize: 28, color }} />
-      <div style={{ height: 2, background: 'var(--track)', borderRadius: 99, margin: '8px 0 6px' }}>
+      <div className="h-[2px] rounded-full bg-muted my-2">
         <div style={{ height: '100%', width: `${mounted ? pct : 0}%`, background: color, borderRadius: 99, transition: 'width 1.4s cubic-bezier(.16,1,.3,1)' }} />
       </div>
-      <p style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--text-4)' }}>{sub}</p>
+      <p className="text-[10px] font-mono text-muted-foreground">{sub}</p>
     </div>
   )
 }
@@ -130,14 +125,10 @@ function StatCard({ label, k, color, pct, spark, sub }: { label: string; k: stri
 
 function IconBtn({ icon: Icon, onClick, active }: { icon: React.ElementType; onClick: () => void; active?: boolean }) {
   return (
-    <button onClick={onClick} style={{
-      background: active ? 'var(--track)' : 'none',
-      border: 'none', padding: '6px 8px', cursor: 'pointer',
-      color: active ? 'var(--text)' : 'var(--icon)',
-      borderRadius: 8, transition: 'color .15s, background .15s',
-    }}
-      onMouseEnter={e => (e.currentTarget.style.color = 'var(--icon-hover)')}
-      onMouseLeave={e => (e.currentTarget.style.color = active ? 'var(--text)' : 'var(--icon)')}>
+    <button onClick={onClick} className={cn(
+      'p-1.5 rounded-md cursor-pointer transition-colors text-muted-foreground hover:text-foreground',
+      active ? 'bg-accent text-foreground' : 'hover:bg-accent'
+    )}>
       <Icon size={16} />
     </button>
   )
@@ -145,9 +136,9 @@ function IconBtn({ icon: Icon, onClick, active }: { icon: React.ElementType; onC
 
 // ─── Card ────────────────────────────────────────────────────────────────────
 
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function Card({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow-card)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', ...style }}>
+    <div className={cn('bg-card border border-border rounded-xl shadow-sm', className)} style={style}>
       {children}
     </div>
   )
@@ -155,9 +146,9 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
 
 function CardLabel({ icon: Icon, label }: { icon?: React.ElementType; label: string }) {
   return (
-    <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
-      {Icon && <Icon size={11} style={{ color: 'var(--text-3)' }} />}
-      <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>{label}</span>
+    <div className="flex items-center gap-2 mb-3.5">
+      {Icon && <Icon size={11} className="text-muted-foreground" />}
+      <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
     </div>
   )
 }
@@ -165,7 +156,7 @@ function CardLabel({ icon: Icon, label }: { icon?: React.ElementType; label: str
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [dark] = useState(true) // light theme disabled until fully implemented
+  const [dark] = useState(true)
   const [time, setTime] = useState<TimeProgress>(getTP)
   const [focus, setFocus] = useState(false)
   const [ambient, setAmbient] = useState(false)
@@ -188,11 +179,9 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
-    document.documentElement.classList.toggle('light', !dark)
   }, [dark])
 
   useEffect(() => {
-    // Pull from Supabase on mount
     initialSync().then(({ history: h, habits, milestones }) => {
       if (Object.keys(h).length) {
         const local = loadHistoryLocal()
@@ -202,14 +191,12 @@ export default function App() {
       }
       if (habits?.length) setSyncedHabits(habits)
       if (milestones?.length) setSyncedMilestones(milestones)
-      // Also update note from Supabase
       const remoteNote = getNotes()[today]
       if (remoteNote) setNote(remoteNote)
     }).catch(() => {
       syncHistoryFromAPI().then(merged => setHistory(merged)).catch(() => {})
     })
 
-    // Save snapshot every 5 min
     function doSnap() {
       const t = getTP()
       const d = saveSnapshotLocal(t)
@@ -292,11 +279,12 @@ export default function App() {
   const quoteIdx = Math.floor(Date.now() / 8000) % QUOTES.length
 
   return (
-    <div style={{ minHeight: '100svh', background: 'var(--bg)', color: 'var(--text)', transition: 'background 0.3s, color 0.3s', position: 'relative', overflow: 'hidden' }}>
+    <div className="min-h-svh bg-background text-foreground">
       {/* Ambient glow */}
       <div aria-hidden style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        background: `radial-gradient(ellipse 80% 60% at 50% -10%, ${ac.c}14 0%, transparent 70%)` }} />
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: '32px 20px 60px', position: 'relative', zIndex: 1 }}>
+        background: `radial-gradient(ellipse 80% 50% at 50% -5%, ${ac.c}18 0%, transparent 65%)` }} />
+
+      <div className="relative z-10" style={{ maxWidth: 520, margin: '0 auto', padding: '32px 20px 60px' }}>
 
         {/* ── Header ── */}
         <div className="flex items-start justify-between mb-6">
@@ -305,19 +293,20 @@ export default function App() {
               <form onSubmit={e => { e.preventDefault(); saveName(userName) }}>
                 <input value={userName} onChange={e => setUserName(e.target.value)} placeholder="Your name"
                   autoFocus onBlur={() => saveName(userName)}
-                  style={{ background: 'transparent', border: 'none', outline: 'none', color: ac.c, fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', width: 140, fontFamily: 'inherit' }} />
+                  className="bg-transparent border-none outline-none text-[11px] font-semibold uppercase tracking-[0.14em] w-36"
+                  style={{ color: ac.c }} />
               </form>
             ) : (
-              <button onClick={() => setEditName(true)} className="flex items-center gap-1.5 group" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                <span style={{ color: ac.c, fontSize: 11, fontWeight: 700, letterSpacing: '0.14em' }}>
+              <button onClick={() => setEditName(true)} className="flex items-center gap-1.5 group bg-transparent border-none p-0 cursor-pointer">
+                <span className="text-[11px] font-semibold tracking-[0.14em] uppercase" style={{ color: ac.c }}>
                   {greet(hr, userName).toUpperCase()}
                 </span>
-                <Edit3 size={9} style={{ color: ac.c, opacity: 0 }} className="group-hover:opacity-60 transition-opacity" />
+                <Edit3 size={9} className="opacity-0 group-hover:opacity-60 transition-opacity" style={{ color: ac.c }} />
               </button>
             )}
             <Zap size={11} style={{ color: ac.c }} />
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-0.5">
             <IconBtn icon={Command} onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} />
             <IconBtn icon={Grid3x3} onClick={() => setYearDots(true)} />
             <IconBtn icon={BookOpen} onClick={() => setLogbookOpen(true)} />
@@ -330,30 +319,30 @@ export default function App() {
             <span className="font-mono tabular-nums" style={{ fontSize: 'clamp(4rem,18vw,6.5rem)', fontWeight: 200, letterSpacing: '-0.03em', color: ac.c, lineHeight: 0.9 }}>
               {ts}
             </span>
-            <span className="font-mono tabular-nums pb-2" style={{ fontSize: 'clamp(1.2rem,5vw,2rem)', color: 'var(--text-4)', fontWeight: 300 }}>
+            <span className="font-mono tabular-nums text-muted-foreground pb-2" style={{ fontSize: 'clamp(1.2rem,5vw,2rem)', fontWeight: 300 }}>
               {sc}
             </span>
           </div>
         </div>
-        <p style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 4 }}>
+        <p className="text-sm text-muted-foreground mb-1">
           {time.now.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
         </p>
-        <p style={{ color: 'var(--text-4)', fontSize: 13, marginBottom: 28 }}>{emph(hr, time)}</p>
+        <p className="text-sm text-muted-foreground/70 mb-7">{emph(hr, time)}</p>
 
         {/* ── Day card ── */}
-        <Card style={{ padding: 20, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 24 }}>
+        <Card className="p-5 mb-2.5 flex items-center gap-6">
           <DayArc pct={time.dP} />
           <div className="flex-1">
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: DAY_COLOR, marginBottom: 8 }}>Day Remaining</p>
-            <p style={{ fontSize: 18, fontWeight: 500, color: 'var(--text-2)', marginBottom: 16, lineHeight: 1.3 }}>{tip('Day', time.dP)}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: DAY_COLOR }}>Day Progress</p>
+            <p className="text-base font-medium text-foreground/80 mb-4 leading-snug">{tip('Day', time.dP)}</p>
             <div className="flex gap-6">
               <div>
-                <AnimatedNumber value={time.dP} dec={0} suffix="%" style={{ fontSize: 22, fontFamily: 'monospace', fontWeight: 600, color: 'var(--text)' }} />
-                <p style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 2, color: 'var(--text-4)' }}>Elapsed</p>
+                <AnimatedNumber value={time.dP} dec={0} suffix="%" className="text-xl font-mono font-semibold text-foreground tabular-nums" />
+                <p className="text-[9px] uppercase tracking-[0.12em] mt-1 text-muted-foreground">Elapsed</p>
               </div>
               <div>
-                <AnimatedNumber value={100 - time.dP} dec={0} suffix="%" style={{ fontSize: 22, fontFamily: 'monospace', fontWeight: 600, color: 'var(--text)' }} />
-                <p style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 2, color: 'var(--text-4)' }}>Left</p>
+                <AnimatedNumber value={100 - time.dP} dec={0} suffix="%" className="text-xl font-mono font-semibold text-foreground tabular-nums" />
+                <p className="text-[9px] uppercase tracking-[0.12em] mt-1 text-muted-foreground">Left</p>
               </div>
             </div>
           </div>
@@ -367,50 +356,45 @@ export default function App() {
         </div>
 
         {/* ── Quick note ── */}
-        <Card style={{ padding: 18, marginBottom: 10 }}>
+        <Card className="p-4 mb-2.5">
           <CardLabel icon={Edit3} label="Quick Note" />
           <textarea value={note} onChange={e => updateNote(e.target.value)}
             placeholder="What's on your mind today…" rows={3}
-            style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: 'var(--text-2)', fontSize: 14, lineHeight: 1.6, fontFamily: 'inherit' }} />
+            className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground/80 leading-relaxed placeholder:text-muted-foreground/50" />
         </Card>
 
         {/* ── Focus ── */}
-        <Card style={{ padding: '14px 18px', marginBottom: 10, display: 'flex', alignItems: 'center' }}>
-          <Zap size={13} style={{ color: focus ? ac.c : 'var(--text-3)', marginRight: 8 }} />
-          <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>Focus</span>
+        <Card className="px-4 py-3 mb-2.5 flex items-center">
+          <Zap size={13} className={focus ? '' : 'text-muted-foreground'} style={focus ? { color: ac.c } : {}} />
+          <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground ml-2">Focus</span>
           <div className="ml-auto">
             <Toggle checked={focus} onChange={() => setFocus(f => !f)} />
           </div>
         </Card>
 
-        {/* ── Pomodoro (focus on) ── */}
+        {/* ── Pomodoro ── */}
         {focus && (
-          <Card style={{ padding: 18, marginBottom: 10 }} >
+          <Card className="p-4 mb-2.5">
             <CardLabel label="Pomodoro" />
             <Pomodoro />
           </Card>
         )}
 
         {/* ── Habits ── */}
-        <Card style={{ padding: 18, marginBottom: 10 }}>
+        <Card className="p-4 mb-2.5">
           <CardLabel icon={Flame} label="Habits" />
           <Habits initialHabits={syncedHabits} />
         </Card>
 
         {/* ── Milestones ── */}
-        <Card style={{ padding: 18, marginBottom: 10 }}>
+        <Card className="p-4 mb-2.5">
           <CardLabel label="Milestones" />
           <Milestones initialMilestones={syncedMilestones} />
         </Card>
 
-        {/* ── Dashboard ── */}
-        <div className="mb-2.5">
-          <Dashboard />
-        </div>
-
         {/* ── Notion ── */}
         {showNotion && (
-          <Card style={{ padding: 18, marginBottom: 10 }}>
+          <Card className="p-4 mb-2.5">
             <CardLabel label="Notion" />
             <NotionPanel />
           </Card>
@@ -418,10 +402,8 @@ export default function App() {
 
         {/* ── Footer ── */}
         <div className="flex items-center justify-between mt-6">
-          <p style={{ fontSize: 10, fontStyle: 'italic', color: 'var(--text-4)' }}>"{QUOTES[quoteIdx]}"</p>
-          <button onClick={() => { setCmdkOpen(true); setCmdkQuery('') }}
-            className="kbd flex-shrink-0 ml-4"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-3)', background: 'none', cursor: 'pointer' }}>⌘K</button>
+          <p className="text-[10px] italic text-muted-foreground/60">"{QUOTES[quoteIdx]}"</p>
+          <button onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} className="kbd flex-shrink-0 ml-4 cursor-pointer">⌘K</button>
         </div>
       </div>
 

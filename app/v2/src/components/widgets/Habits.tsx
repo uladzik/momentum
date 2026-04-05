@@ -36,14 +36,12 @@ export function Habits({ initialHabits }: Props) {
     return { k: d.toISOString().slice(0, 10), l: d.toLocaleDateString('en', { weekday: 'narrow' }) }
   }), [today])
 
-  // Sync to localStorage + Supabase (debounced)
   useEffect(() => {
     localStorage.setItem('mh', JSON.stringify(habits))
     clearTimeout(syncTimer.current)
     syncTimer.current = setTimeout(() => { pushHabits(habits).catch(() => {}) }, 1500)
   }, [habits])
 
-  // Apply initial data from Supabase when it arrives
   useEffect(() => {
     if (initialHabits?.length) setHabits(initialHabits)
   }, [initialHabits])
@@ -93,7 +91,7 @@ export function Habits({ initialHabits }: Props) {
   return (
     <div className="space-y-0.5">
       {cel && (
-        <div className="si mb-3 px-3 py-2.5 rounded-xl text-center text-xs font-bold"
+        <div className="si mb-3 px-3 py-2.5 rounded-lg text-center text-xs font-bold"
           style={{ background: 'linear-gradient(90deg,transparent,rgba(251,191,36,.12),transparent)', color: '#fbbf24', backgroundSize: '200% 100%', animation: 'shimmer 1.5s ease-out' }}>
           ✨ {cel.name} — {cel.streak} day streak!
         </div>
@@ -103,7 +101,7 @@ export function Habits({ initialHabits }: Props) {
         <div className="flex-1" />
         <div className="flex gap-[3px] mr-6">
           {last7.map(d => (
-            <div key={d.k} className="w-[22px] text-center text-[8px] font-mono font-medium uppercase" style={{ color: 'var(--text-4)' }}>{d.l}</div>
+            <div key={d.k} className="w-[22px] text-center text-[8px] font-mono font-medium uppercase text-muted-foreground/60">{d.l}</div>
           ))}
         </div>
       </div>
@@ -114,7 +112,7 @@ export function Habits({ initialHabits }: Props) {
         return (
           <div key={hab.id} className="flex items-center py-1.5 group">
             <div className="flex-1 min-w-0 flex items-center gap-1.5">
-              <span style={{ fontSize: 13, color: done ? 'var(--text-4)' : 'var(--text-2)', textDecoration: done ? 'line-through' : 'none' }} className="truncate">
+              <span className={`text-[13px] truncate ${done ? 'line-through text-muted-foreground/50' : 'text-foreground/70'}`}>
                 {hab.name}
               </span>
               {st >= 2 && (
@@ -123,7 +121,7 @@ export function Habits({ initialHabits }: Props) {
                   <Flame size={9} />{st}
                 </span>
               )}
-              <span style={{ fontSize: 9, fontFamily: 'monospace', marginLeft: 'auto', marginRight: 8, color: wc >= 5 ? '#34d399' : 'var(--text-4)' }}>
+              <span className={`text-[9px] font-mono ml-auto mr-2 ${wc >= 5 ? 'text-emerald-400' : 'text-muted-foreground/50'}`}>
                 {wc}/7
               </span>
             </div>
@@ -132,14 +130,13 @@ export function Habits({ initialHabits }: Props) {
                 const isDone = hab.h[d.k], isToday = d.k === today, isPop = pop === `${hab.id}-${d.k}`
                 return (
                   <button key={d.k} onClick={() => toggle(hab.id, d.k)}
-                    className={`hcell w-[22px] h-[22px] rounded-[6px] flex items-center justify-center transition ${isDone ? 'bg-emerald-500/80 text-white' : isToday ? 'ring-1 ring-gray-300/30 dark:ring-gray-600/30' : ''}`}
-                    style={{ background: isDone ? undefined : 'var(--track)' }}>
+                    className={`hcell w-[22px] h-[22px] rounded-[6px] flex items-center justify-center transition-colors ${isDone ? 'bg-emerald-500/80 text-white' : isToday ? 'bg-muted ring-1 ring-border' : 'bg-muted'}`}>
                     {isDone && <span className={isPop ? 'check-pop' : ''}><Check size={9} /></span>}
                   </button>
                 )
               })}
             </div>
-            <button onClick={() => deleteHabit(hab.id)} className="ml-1.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:text-red-400 transition" style={{ color: 'var(--text-3)' }}>
+            <button onClick={() => deleteHabit(hab.id)} className="ml-1.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:text-destructive transition-colors text-muted-foreground cursor-pointer">
               <Trash2 size={11} />
             </button>
           </div>
@@ -153,7 +150,7 @@ export function Habits({ initialHabits }: Props) {
           <Button type="button" size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
         </form>
       ) : (
-        <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-[10px] transition pt-2" style={{ color: 'var(--text-3)' }}>
+        <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-[10px] pt-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
           <Plus size={10} /> Add habit
         </button>
       )}
