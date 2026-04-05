@@ -32,8 +32,8 @@ export interface DaySnapshot {
   mP: number
   wP: number
   dP: number
-  habits?: Record<string, number>
   pomodoroSessions?: number
+  note?: string
 }
 
 export interface HistoryData {

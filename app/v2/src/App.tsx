@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Command, Grid3x3, Maximize2, Sun, Moon, Zap, Edit3, Flame } from 'lucide-react'
+import { Command, Grid3x3, Maximize2, Sun, Moon, Zap, Edit3, Flame, BookOpen } from 'lucide-react'
 import './index.css'
 
 import { getTP, greet, emph, acc, tip } from '@/lib/time'
 import { saveSnapshotLocal, loadHistoryLocal, syncHistoryFromAPI, getSparkData } from '@/lib/history'
+import { getNotes, saveNote } from '@/lib/notes'
 import { AnimatedNumber } from '@/components/widgets/AnimatedNumber'
 import { Sparkline } from '@/components/widgets/Sparkline'
 import { Pomodoro } from '@/components/widgets/Pomodoro'
@@ -13,6 +14,7 @@ import { NotionPanel } from '@/components/widgets/NotionPanel'
 import { YearDots } from '@/components/widgets/YearDots'
 import { AmbientMode } from '@/components/widgets/AmbientMode'
 import { CommandPalette } from '@/components/widgets/CommandPalette'
+import { Logbook } from '@/components/widgets/Logbook'
 import type { TimeProgress } from '@/types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -135,10 +137,15 @@ export default function App() {
   const [cmdkQuery, setCmdkQuery] = useState('')
   const [userName, setUserName] = useState(() => { try { return localStorage.getItem('m_name') || '' } catch { return '' } })
   const [editName, setEditName] = useState(false)
-  const [note, setNote] = useState(() => { try { return localStorage.getItem('m_note') || '' } catch { return '' } })
+  const [note, setNote] = useState(() => {
+    const notes = getNotes()
+    return notes[new Date().toISOString().slice(0, 10)] ?? ''
+  })
   const [history, setHistory] = useState(loadHistoryLocal)
   const [showNotion, setShowNotion] = useState(false)
+  const [logbookOpen, setLogbookOpen] = useState(false)
   const noteTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const today = new Date().toISOString().slice(0, 10)
 
   useEffect(() => { const id = setInterval(() => setTime(getTP()), 1000); return () => clearInterval(id) }, [])
 
@@ -187,7 +194,7 @@ export default function App() {
 
   function updateNote(v: string) {
     setNote(v); clearTimeout(noteTimer.current)
-    noteTimer.current = setTimeout(() => localStorage.setItem('m_note', v), 500)
+    noteTimer.current = setTimeout(() => saveNote(today, v), 500)
   }
 
   // Work day remaining
@@ -202,6 +209,7 @@ export default function App() {
     { id: 'ambient', label: 'Ambient mode', kw: 'ambient fullscreen zen', icon: Maximize2, shortcut: 'A', fn: () => setAmbient(true) },
     { id: 'yeardots', label: 'Year in dots', kw: 'year dots calendar', icon: Grid3x3, shortcut: 'Y', fn: () => setYearDots(true) },
     { id: 'notion', label: showNotion ? 'Hide Notion' : 'Show Notion', kw: 'notion pages', fn: () => setShowNotion(s => !s) },
+    { id: 'logbook', label: 'Open Logbook', kw: 'logbook journal diary history log', icon: BookOpen, shortcut: 'L', fn: () => setLogbookOpen(true) },
   ], [dark, focus, showNotion])
 
   useEffect(() => {
@@ -213,7 +221,8 @@ export default function App() {
       if (e.key === 'f' || e.key === 'F') setFocus(f => !f)
       if (e.key === 'a' || e.key === 'A') { setAmbient(a => !a); return }
       if (e.key === 'y' || e.key === 'Y') { setYearDots(y => !y); return }
-      if (e.key === 'Escape') { setAmbient(false); setYearDots(false) }
+      if (e.key === 'l' || e.key === 'L') { setLogbookOpen(o => !o); return }
+      if (e.key === 'Escape') { setAmbient(false); setYearDots(false); setLogbookOpen(false) }
     }
     window.addEventListener('keydown', fn)
     return () => window.removeEventListener('keydown', fn)
@@ -251,6 +260,7 @@ export default function App() {
             {[
               { icon: Command, action: () => { setCmdkOpen(true); setCmdkQuery('') } },
               { icon: Grid3x3, action: () => setYearDots(true) },
+              { icon: BookOpen, action: () => setLogbookOpen(true) },
               { icon: Maximize2, action: () => setAmbient(true) },
               { icon: dark ? Sun : Moon, action: () => setDark(d => !d) },
             ].map(({ icon: Icon, action }, i) => (
@@ -385,6 +395,7 @@ export default function App() {
       {/* ── Overlays ── */}
       {ambient && <AmbientMode t={time} dark={dark} onClose={() => setAmbient(false)} />}
       {yearDots && <YearDots dark={dark} accent={ac} onClose={() => setYearDots(false)} />}
+      <Logbook open={logbookOpen} onClose={() => setLogbookOpen(false)} />
       <CommandPalette open={cmdkOpen} query={cmdkQuery} setQuery={setCmdkQuery} onClose={closeCmdk} actions={cmdActions} />
     </div>
   )
