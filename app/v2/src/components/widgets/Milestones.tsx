@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Trash2, Target, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Dialog } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { pushMilestones, deleteMilestoneRemote } from '@/lib/sync'
 import type { Milestone } from '@/types'
 
@@ -110,8 +110,10 @@ export function Milestones({ initialMilestones }: Props) {
           <Plus size={12} /><Target size={12} /> Add milestone
         </button>
       </div>
-      <Dialog open={showForm} onClose={() => setShowForm(false)}>
-        <AddForm onAdd={add} onClose={() => setShowForm(false)} />
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent>
+          <AddForm onAdd={add} onClose={() => setShowForm(false)} />
+        </DialogContent>
       </Dialog>
     </>
   )
