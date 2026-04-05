@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Command, Grid3x3, Zap, Edit3, Flame, BookOpen } from 'lucide-react'
+import { Command, Grid3x3, Zap, Edit3, Flame, BookOpen, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { signOut } from '@/lib/auth'
 import './index.css'
 
 import { getTP, greet, emph, acc, tip } from '@/lib/time'
@@ -332,6 +333,7 @@ export default function App() {
             <IconBtn icon={Command}  onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} />
             <IconBtn icon={Grid3x3} onClick={() => setYearDots(true)} />
             <IconBtn icon={BookOpen} onClick={() => setLogbookOpen(true)} />
+            <IconBtn icon={LogOut}  onClick={() => signOut()} />
           </div>
         </header>
 

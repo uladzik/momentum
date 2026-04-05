@@ -7,4 +7,12 @@ if (!url || !key) {
   console.warn('[Momentum] Supabase env vars missing — running in local-only mode')
 }
 
-export const supabase = url && key ? createClient(url, key) : null
+export const supabase = url && key
+  ? createClient(url, key, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    })
+  : null
