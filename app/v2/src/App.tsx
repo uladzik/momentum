@@ -17,6 +17,7 @@ import { YearDots } from '@/components/widgets/YearDots'
 import { AmbientMode } from '@/components/widgets/AmbientMode'
 import { CommandPalette } from '@/components/widgets/CommandPalette'
 import { Logbook } from '@/components/widgets/Logbook'
+import { Dashboard } from '@/components/widgets/Dashboard'
 import type { TimeProgress } from '@/types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -75,8 +76,8 @@ function DayArc({ pct }: { pct: number }) {
       </svg>
       <div className="absolute inset-0 flex items-center justify-center" style={{ marginTop: 8 }}>
         <AnimatedNumber value={mounted ? pct : 0} dec={0}
-          className="font-mono font-semibold tabular-nums"
-          style={{ fontSize: 52, lineHeight: 1, background: 'linear-gradient(135deg,#f472b6,#fb923c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
+          className="font-mono tabular-nums"
+          style={{ fontSize: 44, lineHeight: 1, fontWeight: 200, background: 'linear-gradient(135deg,#f472b6,#fb923c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
         <span className="font-mono" style={{ fontSize: 18, color: 'var(--text-3)', marginLeft: 2 }}>%</span>
       </div>
     </div>
@@ -146,7 +147,7 @@ function IconBtn({ icon: Icon, onClick, active }: { icon: React.ElementType; onC
 
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, boxShadow: 'var(--shadow-card)', ...style }}>
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow-card)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', ...style }}>
       {children}
     </div>
   )
@@ -291,8 +292,11 @@ export default function App() {
   const quoteIdx = Math.floor(Date.now() / 8000) % QUOTES.length
 
   return (
-    <div style={{ minHeight: '100svh', background: 'var(--bg)', color: 'var(--text)', transition: 'background 0.3s, color 0.3s' }}>
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '32px 20px 60px' }}>
+    <div style={{ minHeight: '100svh', background: 'var(--bg)', color: 'var(--text)', transition: 'background 0.3s, color 0.3s', position: 'relative', overflow: 'hidden' }}>
+      {/* Ambient glow */}
+      <div aria-hidden style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
+        background: `radial-gradient(ellipse 80% 60% at 50% -10%, ${ac.c}14 0%, transparent 70%)` }} />
+      <div style={{ maxWidth: 520, margin: '0 auto', padding: '32px 20px 60px', position: 'relative', zIndex: 1 }}>
 
         {/* ── Header ── */}
         <div className="flex items-start justify-between mb-6">
@@ -323,10 +327,10 @@ export default function App() {
         {/* ── Clock ── */}
         <div className="mb-1">
           <div className="flex items-end gap-3 leading-none">
-            <span className="font-mono tabular-nums" style={{ fontSize: 'clamp(5rem,22vw,8rem)', fontWeight: 500, letterSpacing: '-0.04em', color: ac.c, lineHeight: 0.9 }}>
+            <span className="font-mono tabular-nums" style={{ fontSize: 'clamp(4rem,18vw,6.5rem)', fontWeight: 200, letterSpacing: '-0.03em', color: ac.c, lineHeight: 0.9 }}>
               {ts}
             </span>
-            <span className="font-mono tabular-nums pb-2" style={{ fontSize: 'clamp(1.6rem,6vw,2.6rem)', color: 'var(--text-4)', fontWeight: 300 }}>
+            <span className="font-mono tabular-nums pb-2" style={{ fontSize: 'clamp(1.2rem,5vw,2rem)', color: 'var(--text-4)', fontWeight: 300 }}>
               {sc}
             </span>
           </div>
@@ -398,6 +402,11 @@ export default function App() {
           <CardLabel label="Milestones" />
           <Milestones initialMilestones={syncedMilestones} />
         </Card>
+
+        {/* ── Dashboard ── */}
+        <div className="mb-2.5">
+          <Dashboard />
+        </div>
 
         {/* ── Notion ── */}
         {showNotion && (
