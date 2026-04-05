@@ -100,7 +100,7 @@ export function Habits() {
         return (
           <div key={hab.id} className="flex items-center py-1.5 group">
             <div className="flex-1 min-w-0 flex items-center gap-1.5">
-              <span className={`text-[13px] truncate ${done ? 'text-gray-400 dark:text-gray-600 line-through' : 'text-gray-700 dark:text-gray-300'}`}>
+              <span style={{ fontSize: 13, color: done ? 'var(--text-4)' : 'var(--text-2)', textDecoration: done ? 'line-through' : 'none' }} className="truncate">
                 {hab.name}
               </span>
               {st >= 2 && (
@@ -109,7 +109,7 @@ export function Habits() {
                   <Flame size={9} />{st}
                 </span>
               )}
-              <span className={`text-[9px] font-mono tabular-nums ml-auto mr-2 ${wc >= 5 ? 'text-emerald-400' : wc >= 3 ? 'text-gray-400' : 'text-gray-500 dark:text-gray-700'}`}>
+              <span style={{ fontSize: 9, fontFamily: 'monospace', marginLeft: 'auto', marginRight: 8, color: wc >= 5 ? '#34d399' : 'var(--text-4)' }}>
                 {wc}/7
               </span>
             </div>
