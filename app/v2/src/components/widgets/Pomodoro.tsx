@@ -73,13 +73,13 @@ export function Pomodoro() {
     <div className="flex items-center gap-4">
       <div className={`relative ${running && !isBreak ? 'pomo-go' : ''}`}>
         <svg width={70} height={70}>
-          <circle cx={35} cy={35} r={rad} fill="none" stroke="currentColor" className="text-black/[0.03] dark:text-white/[0.03]" strokeWidth={3} />
+          <circle cx={35} cy={35} r={rad} fill="none" stroke="var(--track)" strokeWidth={3} />
           <circle cx={35} cy={35} r={rad} fill="none" stroke={col} strokeWidth={3} strokeLinecap="round"
             strokeDasharray={ci} strokeDashoffset={doff}
             style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 1s linear' }} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-mono font-bold tabular-nums" style={{ color: '#fff' }}>
+          <span className="text-sm font-mono font-bold tabular-nums" style={{ color: 'var(--text)' }}>
             {String(mn).padStart(2, '0')}:{String(sc).padStart(2, '0')}
           </span>
           <span className="text-[7px] uppercase tracking-[0.15em] font-semibold mt-0.5" style={{ color: col }}>
@@ -97,7 +97,7 @@ export function Pomodoro() {
             <RotateCcw size={11} />
           </Button>
         </div>
-        <div className="flex items-center gap-1 text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+        <div className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-3)' }}>
           <Flame size={10} className="text-orange-400" />
           <span className="font-mono font-semibold">{todaySessions} today</span>
         </div>

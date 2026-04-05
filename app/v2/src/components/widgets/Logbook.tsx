@@ -159,7 +159,7 @@ function DayEntry({ date, snapshot, habits, milestones, pomoCount, note, onNoteC
                   return (
                     <div key={h.id} className="flex items-center gap-2">
                       <div style={{ width: 14, height: 14, borderRadius: 4, background: done ? '#34d399' : 'rgba(255,255,255,0.06)', border: done ? 'none' : '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        {done && <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
+                        {done && <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke="#0c0c0c" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
                       </div>
                       <span style={{ fontSize: 12, color: done ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)', textDecoration: done ? 'none' : 'none' }}>{h.name}</span>
                     </div>
@@ -226,9 +226,10 @@ function DayEntry({ date, snapshot, habits, milestones, pomoCount, note, onNoteC
 interface Props {
   open: boolean
   onClose: () => void
+  onTodayNoteChange?: (note: string) => void
 }
 
-export function Logbook({ open, onClose }: Props) {
+export function Logbook({ open, onClose, onTodayNoteChange }: Props) {
   const [history, setHistory] = useState<HistoryData>({})
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [pomoLog, setPomoLog] = useState<Record<string, number>>({})
@@ -265,6 +266,7 @@ export function Logbook({ open, onClose }: Props) {
   function handleNoteChange(date: string, text: string) {
     saveNote(date, text)
     setNotes(n => ({ ...n, [date]: text }))
+    if (date === today && onTodayNoteChange) onTodayNoteChange(text)
   }
 
   // Close on Escape

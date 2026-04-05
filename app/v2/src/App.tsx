@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Command, Grid3x3, Sun, Moon, Zap, Edit3, Flame, BookOpen } from 'lucide-react'
+import { Command, Grid3x3, Zap, Edit3, Flame, BookOpen } from 'lucide-react'
 import './index.css'
 
 import { getTP, greet, emph, acc, tip } from '@/lib/time'
@@ -162,7 +162,7 @@ function CardLabel({ icon: Icon, label }: { icon?: React.ElementType; label: str
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [dark, setDark] = useState(() => window.matchMedia('(prefers-color-scheme:dark)').matches)
+  const [dark] = useState(true) // light theme disabled until fully implemented
   const [time, setTime] = useState<TimeProgress>(getTP)
   const [focus, setFocus] = useState(false)
   const [ambient, setAmbient] = useState(false)
@@ -260,7 +260,6 @@ export default function App() {
   }
 
   const cmdActions = useMemo(() => [
-    { id: 'theme', label: dark ? 'Switch to light' : 'Switch to dark', kw: 'theme dark light', icon: dark ? Sun : Moon, shortcut: 'D', fn: () => setDark(d => !d) },
     { id: 'focus', label: focus ? 'Disable focus' : 'Enable focus', kw: 'focus pomodoro work', icon: Zap, shortcut: 'F', fn: () => setFocus(f => !f) },
     { id: 'ambient', label: 'Ambient mode', kw: 'ambient fullscreen clock zen', shortcut: 'A', fn: () => setAmbient(true) },
     { id: 'yeardots', label: 'Year in dots', kw: 'year dots calendar', icon: Grid3x3, shortcut: 'Y', fn: () => setYearDots(true) },
@@ -273,7 +272,6 @@ export default function App() {
       if (cmdkOpen) return
       if (e.target instanceof HTMLElement && ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setCmdkOpen(true); setCmdkQuery(''); return }
-      if (e.key === 'd' || e.key === 'D') setDark(d => !d)
       if (e.key === 'f' || e.key === 'F') setFocus(f => !f)
       if (e.key === 'a' || e.key === 'A') { setAmbient(a => !a); return }
       if (e.key === 'y' || e.key === 'Y') { setYearDots(y => !y); return }
@@ -317,7 +315,6 @@ export default function App() {
             <IconBtn icon={Command} onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} />
             <IconBtn icon={Grid3x3} onClick={() => setYearDots(true)} />
             <IconBtn icon={BookOpen} onClick={() => setLogbookOpen(true)} />
-            <IconBtn icon={dark ? Sun : Moon} onClick={() => setDark(d => !d)} />
           </div>
         </div>
 
@@ -420,7 +417,7 @@ export default function App() {
       {/* ── Overlays ── */}
       {ambient && <AmbientMode t={time} dark={dark} onClose={() => setAmbient(false)} />}
       {yearDots && <YearDots dark={dark} accent={ac} onClose={() => setYearDots(false)} />}
-      <Logbook open={logbookOpen} onClose={() => setLogbookOpen(false)} />
+      <Logbook open={logbookOpen} onClose={() => setLogbookOpen(false)} onTodayNoteChange={setNote} />
       <CommandPalette open={cmdkOpen} query={cmdkQuery} setQuery={setCmdkQuery} onClose={closeCmdk} actions={cmdActions} />
     </div>
   )
