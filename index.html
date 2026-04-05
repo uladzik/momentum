@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"/>
+  <title>Momentum</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'], mono: ['JetBrains Mono','monospace'] } } }
+    };
+  </script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box }
+    body { font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden }
+
+    @keyframes meshMove { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+    .mesh-bg { background-size:400% 400%; animation:meshMove 20s ease infinite }
+
+    .gt { -webkit-background-clip:text!important; background-clip:text!important; -webkit-text-fill-color:transparent }
+
+    .glass { position:relative; border-radius:24px; overflow:hidden; transition:transform .4s cubic-bezier(.16,1,.3,1),box-shadow .4s }
+    .dark .glass { background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.05); backdrop-filter:blur(40px) saturate(1.6); -webkit-backdrop-filter:blur(40px) saturate(1.6) }
+    .light .glass { background:rgba(255,255,255,.45); border:1px solid rgba(255,255,255,.6); backdrop-filter:blur(40px) saturate(1.8); -webkit-backdrop-filter:blur(40px) saturate(1.8); box-shadow:0 1px 2px rgba(0,0,0,.03),inset 0 1px 0 rgba(255,255,255,.5) }
+    .glass:hover { transform:translateY(-3px) scale(1.005) }
+    .dark .glass:hover { box-shadow:0 20px 60px -15px rgba(0,0,0,.5); border-color:rgba(255,255,255,.1) }
+    .light .glass:hover { box-shadow:0 20px 60px -15px rgba(0,0,0,.1) }
+    .glass::before { content:''; position:absolute; inset:0; opacity:0; transition:opacity .4s; pointer-events:none; border-radius:inherit }
+    .dark .glass::before { background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.03),transparent 40%) }
+    .light .glass::before { background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.3),transparent 40%) }
+    .glass:hover::before { opacity:1 }
+
+    .ring-draw { transition:stroke-dashoffset 1.8s cubic-bezier(.16,1,.3,1) }
+    @keyframes breathe { 0%,100%{opacity:.25;transform:translate(-50%,-50%) scale(1)} 50%{opacity:.5;transform:translate(-50%,-50%) scale(1.05)} }
+    .breathe { animation:breathe 4s ease-in-out infinite }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes scaleIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+    @keyframes checkPop { 0%{transform:scale(0) rotate(-45deg)} 60%{transform:scale(1.3) rotate(5deg)} 100%{transform:scale(1) rotate(0)} }
+    @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
+    @keyframes quoteFade { 0%{opacity:0;transform:translateY(8px)} 12%{opacity:1;transform:translateY(0)} 88%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-8px)} }
+    .fu { animation:fadeUp .7s cubic-bezier(.16,1,.3,1) both }
+    .fi { animation:fadeIn .6s ease both }
+    .si { animation:scaleIn .4s cubic-bezier(.16,1,.3,1) both }
+    .check-pop { animation:checkPop .35s cubic-bezier(.34,1.56,.64,1) both }
+
+    @keyframes morph1 { 0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} 50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%} }
+    @keyframes morph2 { 0%,100%{border-radius:40% 60% 70% 30%/40% 50% 60% 50%} 50%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} }
+    .blob1 { animation:morph1 15s ease-in-out infinite }
+    .blob2 { animation:morph2 18s ease-in-out infinite }
+
+    @keyframes partFloat { 0%{transform:translateY(0) scale(1);opacity:0} 10%{opacity:.6} 90%{opacity:.4} 100%{transform:translateY(-100vh) scale(0);opacity:0} }
+    .particle { position:absolute; border-radius:50%; pointer-events:none; animation:partFloat linear infinite }
+
+    @keyframes orbA { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(120px,-100px) scale(1.2)} 66%{transform:translate(-60px,80px) scale(.85)} }
+    @keyframes orbB { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-100px,90px) scale(1.15)} }
+    @keyframes orbC { 0%,100%{transform:translate(0,0)} 33%{transform:translate(70px,90px)} 66%{transform:translate(-40px,-50px)} }
+
+    .tog-k { transition:left .3s cubic-bezier(.68,-.55,.27,1.55) }
+
+    .coll { display:grid; grid-template-rows:0fr; transition:grid-template-rows .4s cubic-bezier(.16,1,.3,1) }
+    .coll.open { grid-template-rows:1fr }
+    .coll-i { overflow:hidden }
+
+    @keyframes pomoPulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.15)} 50%{box-shadow:0 0 0 14px rgba(239,68,68,0)} }
+    .pomo-go { animation:pomoPulse 2s ease-in-out infinite; border-radius:50% }
+
+    .hcell { transition:all .15s ease }
+    .hcell:hover { transform:scale(1.35); z-index:10 }
+    @media(max-width:480px) { .hcell { min-width:28px; min-height:28px; width:28px!important; height:28px!important } }
+
+    /* Mobile layout tweaks */
+    @media(max-width:480px) {
+      .glass { border-radius:18px }
+      .mob-hide { display:none!important }
+      .mob-compact { padding:16px!important }
+      .mob-gap { gap:6px!important }
+    }
+
+    .focus-glow { box-shadow:0 0 80px -20px rgba(59,130,246,.15) }
+    .dark .focus-glow { box-shadow:0 0 80px -20px rgba(96,165,250,.1) }
+
+    @keyframes hourSweep { 0%{transform:scaleX(0);opacity:1} 100%{transform:scaleX(1);opacity:0} }
+    .hour-sweep { position:fixed; top:0; left:0; right:0; height:2px; transform-origin:left; z-index:100; animation:hourSweep 2.5s cubic-bezier(.16,1,.3,1) both }
+
+    .noise::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:9999; opacity:.015; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E") }
+    .dark .noise::after { opacity:.025 }
+
+    ::-webkit-scrollbar { width:4px }
+    ::-webkit-scrollbar-track { background:transparent }
+    ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.05); border-radius:2px }
+    .light ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.06) }
+
+    .bento { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start }
+    @media(max-width:640px) { .bento { grid-template-columns:1fr } }
+    .span2 { grid-column:1/-1 }
+    @media(min-width:641px) { .bento-scroll { max-height:280px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:rgba(128,128,128,.15) transparent } .bento-scroll::-webkit-scrollbar{width:4px} .bento-scroll::-webkit-scrollbar-thumb{background:rgba(128,128,128,.15);border-radius:4px} }
+    .top-row { display:flex; flex-direction:column; gap:10px }
+    @media(min-width:641px) { .top-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start } .top-row .stat-row { display:flex; flex-direction:column; gap:8px } .top-row .mini-card { min-width:0 } }
+
+    .kbd { display:inline-flex; align-items:center; padding:1px 5px; font-size:8px; font-weight:600; border-radius:4px; border:1px solid; font-family:'JetBrains Mono',monospace }
+
+    .cmdk-ov { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.6); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:flex; align-items:flex-start; justify-content:center; padding-top:min(18vh,140px) }
+    .cmdk-p { width:100%; max-width:500px; margin:0 16px; border-radius:20px; overflow:hidden; animation:scaleIn .2s cubic-bezier(.16,1,.3,1) both }
+    .dark .cmdk-p { background:rgba(20,20,25,.92); border:1px solid rgba(255,255,255,.08); box-shadow:0 30px 100px -15px rgba(0,0,0,.7) }
+    .light .cmdk-p { background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.06); box-shadow:0 30px 100px -15px rgba(0,0,0,.2) }
+    .cmdk-i { padding:11px 18px; cursor:pointer; display:flex; align-items:center; gap:12px; transition:background .1s; border-radius:10px; margin:2px 6px }
+    .cmdk-i:hover, .cmdk-i.act { background:rgba(255,255,255,.06) }
+    .light .cmdk-i:hover, .light .cmdk-i.act { background:rgba(0,0,0,.04) }
+
+    .hero-time { font-size:clamp(2.5rem,9vw,6rem); font-weight:100; letter-spacing:-0.04em; line-height:1 }
+    @media(min-width:640px) { .hero-time { font-size:clamp(4rem,12vw,7.5rem) } }
+    /* Hide seconds on mobile */
+    @media(max-width:480px) { .hero-sec { display:none } }
+
+    .spark { opacity:.6; transition:opacity .3s }
+    .spark:hover { opacity:1 }
+
+    .glass .gt { transition:filter .3s }
+    .glass:hover .gt { filter:brightness(1.15) }
+
+    .hero-card { position:relative; overflow:hidden; border-radius:28px; transition:transform .5s cubic-bezier(.16,1,.3,1),box-shadow .5s; perspective:800px }
+    .dark .hero-card { background:linear-gradient(145deg,rgba(255,255,255,.03) 0%,rgba(255,255,255,.01) 100%); border:1px solid rgba(255,255,255,.07); backdrop-filter:blur(40px) }
+    .light .hero-card { background:linear-gradient(145deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,.35) 100%); border:1px solid rgba(255,255,255,.7); backdrop-filter:blur(40px) }
+    .hero-card:hover { transform:translateY(-4px) }
+    .dark .hero-card:hover { box-shadow:0 30px 80px -20px rgba(0,0,0,.6); border-color:rgba(255,255,255,.12) }
+    .light .hero-card:hover { box-shadow:0 30px 80px -20px rgba(0,0,0,.12) }
+    /* Compact hero card on mobile */
+    @media(max-width:480px) { .hero-card { border-radius:20px }
+      .hero-card .hero-arc { display:none }
+      .hero-card .hero-compact { display:flex!important }
+    }
+    @media(min-width:481px) { .hero-card .hero-compact { display:none!important } }
+
+    @keyframes arcSweep { from{stroke-dashoffset:var(--arc-total)} to{stroke-dashoffset:var(--arc-offset)} }
+    .arc-sweep { animation:arcSweep 2s cubic-bezier(.16,1,.3,1) both }
+
+    @keyframes heroGlow { 0%,100%{opacity:.03} 50%{opacity:.06} }
+    .hero-glow { animation:heroGlow 6s ease-in-out infinite }
+
+    .stat-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px }
+    @media(max-width:640px) { .stat-row { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; gap:8px; padding-bottom:4px; scrollbar-width:none }
+      .stat-row::-webkit-scrollbar { display:none }
+      .stat-row .mini-card { min-width:160px; flex-shrink:0; scroll-snap-align:start }
+    }
+
+    .mini-card { border-radius:20px; overflow:hidden; transition:transform .3s cubic-bezier(.16,1,.3,1),box-shadow .3s }
+    .dark .mini-card { background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.04); backdrop-filter:blur(30px) }
+    .light .mini-card { background:rgba(255,255,255,.4); border:1px solid rgba(255,255,255,.5); backdrop-filter:blur(30px) }
+    .mini-card:hover { transform:translateY(-2px) }
+    .dark .mini-card:hover { border-color:rgba(255,255,255,.08); box-shadow:0 12px 40px -10px rgba(0,0,0,.4) }
+    .light .mini-card:hover { box-shadow:0 12px 40px -10px rgba(0,0,0,.08) }
+
+    /* Year dots */
+    .dots-grid { display:grid; grid-template-columns:repeat(19,1fr); gap:4px }
+    @media(max-width:480px) { .dots-grid { grid-template-columns:repeat(15,1fr); gap:3px } }
+    .dot { width:100%; aspect-ratio:1; border-radius:50%; transition:transform .15s,opacity .3s }
+    .dot:hover { transform:scale(1.6); z-index:10 }
+    .dot-past { opacity:.15 }
+    .dot-today { box-shadow:0 0 8px var(--ac), 0 0 16px var(--ac); transform:scale(1.2) }
+    .dot-future { opacity:.85 }
+    @keyframes dotReveal { from{opacity:0;transform:scale(0)} to{opacity:var(--dot-op,1);transform:scale(var(--dot-sc,1))} }
+
+    /* Month dots */
+    .month-dots-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px }
+    .month-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.15em; color:rgba(255,255,255,.3) }
+    .light .month-label { color:rgba(0,0,0,.25) }
+
+    /* Tooltip */
+    .dot-tip { position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); padding:4px 8px; border-radius:8px; font-size:10px; font-weight:600; white-space:nowrap; pointer-events:none; z-index:20 }
+    .dark .dot-tip { background:rgba(0,0,0,.85); color:#fff; border:1px solid rgba(255,255,255,.1) }
+    .light .dot-tip { background:rgba(255,255,255,.95); color:#000; border:1px solid rgba(0,0,0,.08); box-shadow:0 4px 12px rgba(0,0,0,.1) }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+var h = React.createElement;
+var S = React.useState;
+var E = React.useEffect;
+var R = React.useRef;
+var C = React.useCallback;
+var M = React.useMemo;
+
+// ─── Icons ───
+function ic(paths, w) {
+  w = w || 14;
+  return function(p) {
+    return h('svg', {
+      xmlns: 'http://www.w3.org/2000/svg', width: w, height: w,
+      viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+      strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+      className: (p && p.className) || ''
+    }, paths.map(function(d, i) { return h(d[0], Object.assign({ key: i }, d[1])); }));
+  };
+}
+
+var ISun = ic([['circle',{cx:12,cy:12,r:5}],['path',{d:'M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42'}]], 18);
+var IMoon = ic([['path',{d:'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'}]], 18);
+var IPlus = ic([['path',{d:'M12 5v14M5 12h14',strokeWidth:2.5}]]);
+var IZap = ic([['polygon',{points:'13 2 3 14 12 14 11 22 21 10 12 10 13 2',strokeWidth:2}]], 15);
+var IPlay = ic([['polygon',{points:'5 3 19 12 5 21 5 3',strokeWidth:2}]], 13);
+var IPause = ic([['rect',{x:6,y:4,width:4,height:16,strokeWidth:2.5}],['rect',{x:14,y:4,width:4,height:16,strokeWidth:2.5}]], 13);
+var IReset = ic([['polyline',{points:'1 4 1 10 7 10',strokeWidth:2}],['path',{d:'M3.51 15a9 9 0 1 0 2.13-9.36L1 10',strokeWidth:2}]], 12);
+var ICheck = ic([['polyline',{points:'20 6 9 17 4 12',strokeWidth:3}]], 11);
+var IFlame = ic([['path',{d:'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'}]], 12);
+var IExpand = ic([['polyline',{points:'15 3 21 3 21 9'}],['polyline',{points:'9 21 3 21 3 15'}],['line',{x1:21,y1:3,x2:14,y2:10}],['line',{x1:3,y1:21,x2:10,y2:14}]], 15);
+var ITrash = ic([['polyline',{points:'3 6 5 6 21 6',strokeWidth:2}],['path',{d:'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2',strokeWidth:2}]], 12);
+var ITarget = ic([['circle',{cx:12,cy:12,r:10}],['circle',{cx:12,cy:12,r:6}],['circle',{cx:12,cy:12,r:2}]]);
+var ISearch = ic([['circle',{cx:11,cy:11,r:8}],['line',{x1:21,y1:21,x2:16.65,y2:16.65,strokeWidth:2}]], 16);
+var ICmd = ic([['path',{d:'M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z'}]], 14);
+var IUser = ic([['path',{d:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'}],['circle',{cx:12,cy:7,r:4}]], 14);
+var IEdit = ic([['path',{d:'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'}],['path',{d:'M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'}]], 13);
+var IGrid = ic([['rect',{x:3,y:3,width:7,height:7}],['rect',{x:14,y:3,width:7,height:7}],['rect',{x:14,y:14,width:7,height:7}],['rect',{x:3,y:14,width:7,height:7}]], 15);
+var ICalendar = ic([['rect',{x:3,y:4,width:18,height:18,rx:2,ry:2}],['line',{x1:16,y1:2,x2:16,y2:6}],['line',{x1:8,y1:2,x2:8,y2:6}],['line',{x1:3,y1:10,x2:21,y2:10}]], 15);
+var IChevL = ic([['polyline',{points:'15 18 9 12 15 6',strokeWidth:2}]], 14);
+var IChevR = ic([['polyline',{points:'9 18 15 12 9 6',strokeWidth:2}]], 14);
+var INotion = ic([['path',{d:'M4 4.5A2.5 2.5 0 0 1 6.5 2H18l2 2v16.5a2.5 2.5 0 0 1-2.5 2.5H6.5A2.5 2.5 0 0 1 4 20.5z'}],['path',{d:'M8 2v20'}],['path',{d:'M12 7h5'}],['path',{d:'M12 11h5'}],['path',{d:'M12 15h3'}]], 14);
+var ILink = ic([['path',{d:'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'}],['path',{d:'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'}]], 12);
+
+// ─── Sound ───
+function playChime() {
+  try {
+    var c = new (window.AudioContext || window.webkitAudioContext)();
+    [523.25, 659.25, 783.99].forEach(function(f, i) {
+      var o = c.createOscillator(), g = c.createGain();
+      o.connect(g); g.connect(c.destination);
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.1, c.currentTime + i * 0.12);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.12 + 0.6);
+      o.start(c.currentTime + i * 0.12);
+      o.stop(c.currentTime + i * 0.12 + 0.6);
+    });
+  } catch(e) {}
+}
+
+// ─── Quotes ───
+var QTS = [
+  "The way to get started is to quit talking and begin doing.",
+  "Time is what we want most, but what we use worst.",
+  "You don\u2019t need more time. You need more focus.",
+  "Small daily improvements lead to staggering long-term results.",
+  "The secret of getting ahead is getting started.",
+  "Focus on being productive instead of busy.",
+  "Done is better than perfect.",
+  "Your future self is watching you right now.",
+  "Discipline is choosing what you want most over what you want now.",
+  "The only way to do great work is to love what you do.",
+  "Make each day your masterpiece.",
+  "What gets measured gets managed."
+];
+
+// ─── Time calculations ───
+function getTP() {
+  var n = new Date();
+  var y = n.getFullYear(), m = n.getMonth(), d = n.getDate();
+  var sy = new Date(y, 0, 1), ey = new Date(y + 1, 0, 1);
+  var yP = ((n - sy) / (ey - sy)) * 100;
+  var sm = new Date(y, m, 1), em = new Date(y, m + 1, 1);
+  var mP = ((n - sm) / (em - sm)) * 100;
+  var dw = n.getDay(), sw = new Date(n);
+  sw.setDate(d - ((dw + 6) % 7)); sw.setHours(0, 0, 0, 0);
+  var ew = new Date(sw); ew.setDate(sw.getDate() + 7);
+  var wP = ((n - sw) / (ew - sw)) * 100;
+  var sd = new Date(y, m, d), ed = new Date(y, m, d + 1);
+  var dP = ((n - sd) / (ed - sd)) * 100;
+  var ws = new Date(y, m, d, 9), we = new Date(y, m, d, 18);
+  var wdP = n < ws ? 0 : n > we ? 100 : ((n - ws) / (we - ws)) * 100;
+  var wdR = n < we && n >= ws ? Math.ceil((we - n) / 6e4) : n < ws ? 540 : 0;
+  return { yP: yP, mP: mP, wP: wP, dP: dP, wdP: wdP, wdR: wdR, now: n };
+}
+
+function greet(hr, name) {
+  var g = hr < 5 ? "Late night" : hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : hr < 21 ? "Good evening" : "Night owl";
+  return name ? g + ", " + name : g;
+}
+
+function emph(hr, tp) {
+  if (hr < 5) return "Rest well. Tomorrow is a new canvas.";
+  if (hr < 9) return Math.round(100 - tp.dP) + "% of today is ahead. Make it count.";
+  if (hr < 12) return "Deep work window. Protect it.";
+  if (hr < 14) return "Midday reset. Refuel and refocus.";
+  if (hr < 17) return "Afternoon push. Ship before sunset.";
+  if (hr < 19) return "Wrapping up. What did you ship?";
+  if (hr < 21) return Math.round(tp.dP) + "% of today is done. Review time.";
+  return "Wind down. Tomorrow starts fresh.";
+}
+
+function acc(hr) {
+  if (hr < 5 || hr >= 21) return { c: "#a78bfa", c2: "#818cf8", g: "linear-gradient(135deg,#a78bfa,#818cf8,#6366f1)" };
+  if (hr < 10) return { c: "#fbbf24", c2: "#f59e0b", g: "linear-gradient(135deg,#fbbf24,#f59e0b,#d97706)" };
+  if (hr < 14) return { c: "#60a5fa", c2: "#3b82f6", g: "linear-gradient(135deg,#60a5fa,#3b82f6,#2563eb)" };
+  if (hr < 18) return { c: "#34d399", c2: "#10b981", g: "linear-gradient(135deg,#34d399,#10b981,#059669)" };
+  return { c: "#fb923c", c2: "#f97316", g: "linear-gradient(135deg,#fb923c,#f97316,#ea580c)" };
+}
+
+function tip(t, p) {
+  var v = Math.round(p);
+  var m = {
+    Year:  [[25,"Plant seeds now."],[50,"Halfway. Double down."],[75,"Audit: what stays?"],[101,"Final sprint."]],
+    Month: [[30,"Pick one thing to ship."],[60,"Investing or spending time?"],[85,"Ship or shelve."],[101,"Own the outcome."]],
+    Week:  [[30,"Guard deep work blocks."],[60,"Momentum > motivation."],[80,"One session changes it."],[101,"Capture what you learned."]],
+    Day:   [[25,"Hardest task first."],[50,"One more deep block."],[75,"Ship one thing."],[101,"Rest is productive too."]]
+  };
+  var a = m[t] || [];
+  for (var i = 0; i < a.length; i++) { if (v < a[i][0]) return a[i][1]; }
+  return "";
+}
+
+var RINGS = [
+  { l: "Year",  k: "yP", c: ["#818cf8","#c4b5fd"], s: 156 },
+  { l: "Month", k: "mP", c: ["#34d399","#6ee7b7"], s: 120 },
+  { l: "Week",  k: "wP", c: ["#fbbf24","#fde68a"], s: 84 },
+  { l: "Day",   k: "dP", c: ["#fb7185","#fecdd3"], s: 48 }
+];
+
+// ─── History tracking ───
+function saveSnapshot(time) {
+  try {
+    var key = "m_history";
+    var data = JSON.parse(localStorage.getItem(key) || "{}");
+    var today = time.now.toISOString().slice(0, 10);
+    data[today] = { yP: +time.yP.toFixed(2), mP: +time.mP.toFixed(2), wP: +time.wP.toFixed(2), dP: +time.dP.toFixed(2) };
+    var keys = Object.keys(data).sort();
+    while (keys.length > 60) { delete data[keys.shift()]; }
+    localStorage.setItem(key, JSON.stringify(data));
+    return data;
+  } catch(e) { return {}; }
+}
+
+function getSparkData(history, ringKey, count) {
+  var keys = Object.keys(history).sort();
+  var recent = keys.slice(-count);
+  if (recent.length < 2) return null;
+  return recent.map(function(k) { return history[k][ringKey] || 0; });
+}
+
+// ─── Sparkline ───
+function Spark(p) {
+  var d = p.data, col = p.color, w = p.w || 60, ht = p.h || 20;
+  if (!d || d.length < 2) return null;
+  var mn = Math.min.apply(null, d), mx = Math.max.apply(null, d), rng = mx - mn || 1;
+  var pts = d.map(function(v, i) {
+    return ((i / (d.length - 1)) * w).toFixed(1) + "," + (ht - 2 - ((v - mn) / rng) * (ht - 4)).toFixed(1);
+  }).join(" ");
+  var gid = "s" + p.id;
+  return h('svg', { width: w, height: ht, className: "spark" },
+    h('defs', null,
+      h('linearGradient', { id: gid, x1: "0", y1: "0", x2: "0", y2: "1" },
+        h('stop', { offset: "0%", stopColor: col, stopOpacity: 0.3 }),
+        h('stop', { offset: "100%", stopColor: col, stopOpacity: 0 }))),
+    h('polygon', { points: w + "," + ht + " 0," + ht + " " + pts, fill: "url(#" + gid + ")" }),
+    h('polyline', { points: pts, fill: "none", stroke: col, strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round" })
+  );
+}
+
+// ─── Animated Number ───
+function AN(p) {
+  var val = p.value, dec = p.dec != null ? p.dec : 1, sfx = p.sfx || "";
+  var dRef = R(0), pRef = R(0), raf = R(null);
+  var bump = S(0), up = bump[1];
+  E(function() {
+    var s = pRef.current, e = val, t0 = performance.now();
+    function step(t) {
+      var pr = Math.min((t - t0) / 900, 1);
+      var ease = 1 - Math.pow(1 - pr, 4);
+      dRef.current = s + (e - s) * ease;
+      up(function(n) { return n + 1; });
+      if (pr < 1) raf.current = requestAnimationFrame(step);
+    }
+    raf.current = requestAnimationFrame(step);
+    pRef.current = e;
+    return function() { if (raf.current) cancelAnimationFrame(raf.current); };
+  }, [val]);
+  return h('span', { className: p.className || "", style: p.style || {} }, dRef.current.toFixed(dec) + sfx);
+}
+
+// ─── Ring ───
+function Ring(p) {
+  var sz = p.size, pct = p.pct, cols = p.colors, lbl = p.label, idx = p.idx, active = p.isActive;
+  var sw = 3, r = (sz - sw) / 2, ci = 2 * Math.PI * r;
+  var off = ci - (Math.min(pct, 100) / 100) * ci;
+  var c = sz / 2, gid = "rg" + lbl;
+  var ms = S(false), mt = ms[0], sM = ms[1];
+  E(function() { var t = setTimeout(function() { sM(true); }, 100 + idx * 150); return function() { clearTimeout(t); }; }, []);
+  return h('div', { className: "absolute", style: { width: sz, height: sz, top: '50%', left: '50%', transform: 'translate(-50%,-50%)' } },
+    active ? h('div', { className: "breathe absolute rounded-full", style: { width: sz + 10, height: sz + 10, top: '50%', left: '50%', border: '1.5px solid ' + cols[0], opacity: 0.25 } }) : null,
+    h('svg', { width: sz, height: sz },
+      h('defs', null,
+        h('linearGradient', { id: gid, x1: "0%", y1: "0%", x2: "100%", y2: "100%" },
+          h('stop', { offset: "0%", stopColor: cols[0] }),
+          h('stop', { offset: "100%", stopColor: cols[1] }))),
+      h('circle', { cx: c, cy: c, r: r, fill: "none", stroke: "currentColor", className: "text-black/[0.03] dark:text-white/[0.03]", strokeWidth: sw }),
+      h('circle', { cx: c, cy: c, r: r, fill: "none", stroke: "url(#" + gid + ")", strokeWidth: sw, strokeLinecap: "round",
+        strokeDasharray: ci, strokeDashoffset: mt ? off : ci, className: "ring-draw",
+        style: { transform: 'rotate(-90deg)', transformOrigin: 'center' } })
+    )
+  );
+}
+
+// ─── CmdK ───
+function CmdK(p) {
+  var q = p.query, sQ = p.setQuery, onX = p.onClose, acts = p.actions;
+  var as = S(0), a = as[0], sA = as[1];
+  var iRef = R(null);
+  var flt = M(function() {
+    if (!q) return acts;
+    var ql = q.toLowerCase();
+    return acts.filter(function(x) { return x.label.toLowerCase().indexOf(ql) !== -1 || x.kw.toLowerCase().indexOf(ql) !== -1; });
+  }, [q, acts]);
+  E(function() { sA(0); }, [q]);
+  E(function() { if (iRef.current) iRef.current.focus(); }, []);
+  E(function() {
+    function fn(e) {
+      if (e.key === "Escape") { onX(); return; }
+      if (e.key === "ArrowDown") { e.preventDefault(); sA(function(v) { return Math.min(v + 1, flt.length - 1); }); }
+      if (e.key === "ArrowUp") { e.preventDefault(); sA(function(v) { return Math.max(v - 1, 0); }); }
+      if (e.key === "Enter" && flt.length > 0) { flt[a].fn(); onX(); }
+    }
+    window.addEventListener("keydown", fn);
+    return function() { window.removeEventListener("keydown", fn); };
+  }, [flt, a, onX]);
+
+  return h('div', { className: "cmdk-ov", onClick: function(e) { if (e.target === e.currentTarget) onX(); } },
+    h('div', { className: "cmdk-p" },
+      h('div', { className: "flex items-center gap-3 px-5 py-3.5 border-b border-black/[0.05] dark:border-white/[0.05]" },
+        h(ISearch, { className: "text-gray-400 flex-shrink-0" }),
+        h('input', { ref: iRef, type: "text", value: q, onChange: function(e) { sQ(e.target.value); },
+          placeholder: "Type a command\u2026",
+          className: "flex-1 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none font-medium" }),
+        h('span', { className: "kbd border-gray-300 dark:border-gray-700 text-gray-400" }, "esc")),
+      h('div', { className: "py-2 max-h-[300px] overflow-y-auto" },
+        flt.length === 0
+          ? h('p', { className: "px-5 py-8 text-center text-sm text-gray-400" }, "No results")
+          : flt.map(function(item, i) {
+              return h('div', { key: item.id, className: "cmdk-i" + (i === a ? " act" : ""),
+                onClick: function() { item.fn(); onX(); },
+                onMouseEnter: function() { sA(i); } },
+                h('span', { className: "text-gray-400 flex-shrink-0", style: { width: 20 } }, item.ic ? h(item.ic) : null),
+                h('span', { className: "text-sm text-gray-700 dark:text-gray-300 font-medium" }, item.label),
+                item.sc ? h('span', { className: "ml-auto kbd border-gray-300 dark:border-gray-700 text-gray-500" }, item.sc) : null
+              );
+            })
+      )
+    )
+  );
+}
+
+// ─── Pomodoro ───
+function Pomo() {
+  var W = 25 * 60, B = 5 * 60;
+  var ss = S(W), sec = ss[0], sS = ss[1];
+  var rs = S(false), run = rs[0], sR = rs[1];
+  var bs = S(false), brk = bs[0], sB = bs[1];
+  var ns = S(function() { try { return parseInt(localStorage.getItem("mp")) || 0; } catch(e) { return 0; } });
+  var sess = ns[0], sN = ns[1];
+  E(function() {
+    if (!run) return;
+    var id = setInterval(function() {
+      sS(function(s) {
+        if (s <= 1) {
+          sR(false); playChime();
+          if (!brk) { var n = sess + 1; sN(n); localStorage.setItem("mp", String(n)); sB(true); return B; }
+          else { sB(false); return W; }
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return function() { clearInterval(id); };
+  }, [run, brk, sess]);
+  var reset = function() { sR(false); sB(false); sS(W); };
+  var mn = Math.floor(sec / 60), sc = sec % 60;
+  var tot = brk ? B : W, pct = ((tot - sec) / tot) * 100;
+  var rad = 30, ci = 2 * Math.PI * rad, doff = ci - (pct / 100) * ci;
+  var col = brk ? "#34d399" : "#f87171";
+  return h('div', { className: "flex items-center gap-4" },
+    h('div', { className: "relative " + (run && !brk ? "pomo-go" : "") },
+      h('svg', { width: 70, height: 70 },
+        h('circle', { cx: 35, cy: 35, r: rad, fill: "none", stroke: "currentColor", className: "text-black/[0.03] dark:text-white/[0.03]", strokeWidth: 3 }),
+        h('circle', { cx: 35, cy: 35, r: rad, fill: "none", stroke: col, strokeWidth: 3, strokeLinecap: "round",
+          strokeDasharray: ci, strokeDashoffset: doff,
+          style: { transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 1s linear' } })),
+      h('div', { className: "absolute inset-0 flex flex-col items-center justify-center" },
+        h('span', { className: "text-sm font-mono font-bold tabular-nums text-gray-900 dark:text-white" },
+          String(mn).padStart(2, '0') + ":" + String(sc).padStart(2, '0')),
+        h('span', { className: "text-[7px] uppercase tracking-[0.15em] font-semibold mt-0.5", style: { color: col } },
+          brk ? "break" : "focus"))),
+    h('div', { className: "space-y-1.5" },
+      h('div', { className: "flex gap-1" },
+        h('button', { onClick: function() { sR(!run); },
+          className: "p-1.5 rounded-lg transition " + (run ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900" : "bg-black/[0.04] dark:bg-white/[0.04] text-gray-500 hover:text-gray-900 dark:hover:text-white") },
+          run ? h(IPause) : h(IPlay)),
+        h('button', { onClick: reset,
+          className: "p-1.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.04] text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition" },
+          h(IReset))),
+      h('div', { className: "flex items-center gap-1 text-[10px] text-gray-500" },
+        h(IFlame, { className: "text-orange-400" }),
+        h('span', { className: "font-mono font-semibold" }, sess)))
+  );
+}
+
+// ─── Habits ───
+function Habits() {
+  var DEF = [{ id: 1, name: "Exercise", h: {} }, { id: 2, name: "Read", h: {} }, { id: 3, name: "No doomscroll", h: {} }];
+  var hs = S(function() { try { var s = JSON.parse(localStorage.getItem("mh")); return s && s.length ? s : DEF; } catch(e) { return DEF; } });
+  var habs = hs[0], sH = hs[1];
+  var ads = S(false), adding = ads[0], sA = ads[1];
+  var ns = S(""), nn = ns[0], sN = ns[1];
+  var iref = R(null);
+  var today = new Date().toISOString().slice(0, 10);
+  var last7 = M(function() {
+    var d = [];
+    for (var i = 6; i >= 0; i--) { var x = new Date(); x.setDate(x.getDate() - i); d.push({ k: x.toISOString().slice(0, 10), l: x.toLocaleDateString("en", { weekday: "narrow" }) }); }
+    return d;
+  }, [today]);
+  E(function() { localStorage.setItem("mh", JSON.stringify(habs)); }, [habs]);
+  E(function() { if (adding && iref.current) iref.current.focus(); }, [adding]);
+  var celS = S(null), cel = celS[0], sCel = celS[1];
+  var popS = S(null), pop = popS[0], sPop = popS[1];
+  function tog(id, dk) {
+    sH(function(p) {
+      return p.map(function(x) {
+        if (x.id !== id) return x;
+        var hh = {}; Object.keys(x.h).forEach(function(k) { hh[k] = x.h[k]; });
+        hh[dk] = !hh[dk];
+        if (hh[dk]) {
+          sPop(id + "-" + dk); setTimeout(function() { sPop(null); }, 400);
+          var st = 0, dd = new Date();
+          while (hh[dd.toISOString().slice(0, 10)]) { st++; dd.setDate(dd.getDate() - 1); }
+          if (st === 7 || st === 14 || st === 30 || st === 100) sCel({ name: x.name, streak: st });
+        }
+        return { id: x.id, name: x.name, h: hh };
+      });
+    });
+  }
+  E(function() { if (!cel) return; var t = setTimeout(function() { sCel(null); }, 3500); return function() { clearTimeout(t); }; }, [cel]);
+  function streak(hab) { var s = 0, d = new Date(); while (hab.h[d.toISOString().slice(0, 10)]) { s++; d.setDate(d.getDate() - 1); } return s; }
+  function wkCt(hab) { var c = 0; last7.forEach(function(d) { if (hab.h[d.k]) c++; }); return c; }
+  function addH(e) { e.preventDefault(); if (nn.trim()) { sH(function(p) { return p.concat([{ id: Date.now(), name: nn.trim(), h: {} }]); }); sN(""); sA(false); } }
+  function delH(id) { sH(function(p) { return p.filter(function(x) { return x.id !== id; }); }); }
+
+  return h('div', { className: "space-y-0.5" },
+    cel ? h('div', { className: "si mb-3 px-3 py-2.5 rounded-xl text-center text-xs font-bold",
+      style: { background: "linear-gradient(90deg,transparent,rgba(251,191,36,.12),transparent,rgba(251,191,36,.12),transparent)", color: "#fbbf24", backgroundSize: "200% 100%", animation: "shimmer 1.5s ease-out" } },
+      "\u2728 " + cel.name + " \u2014 " + cel.streak + " day streak!") : null,
+    h('div', { className: "flex items-center mb-2" },
+      h('div', { className: "flex-1" }),
+      h('div', { className: "flex gap-[3px] mr-6" },
+        last7.map(function(d) { return h('div', { key: d.k, className: "w-[22px] text-center text-[8px] font-mono font-medium text-gray-400 dark:text-gray-600 uppercase" }, d.l); }))),
+    habs.map(function(hab) {
+      var st = streak(hab), ct = hab.h[today], wc = wkCt(hab);
+      var isMilestone = st === 7 || st === 14 || st === 30 || st === 100;
+      return h('div', { key: hab.id, className: "flex items-center py-1.5 group" },
+        h('div', { className: "flex-1 min-w-0 flex items-center gap-1.5" },
+          h('span', { className: "text-[13px] truncate " + (ct ? "text-gray-400 dark:text-gray-600 line-through" : "text-gray-700 dark:text-gray-300") }, hab.name),
+          st >= 2 ? h('span', { className: "flex items-center gap-0.5 text-[9px] font-bold flex-shrink-0 " + (isMilestone ? "text-yellow-400" : "text-orange-400"),
+            style: isMilestone ? { background: "linear-gradient(90deg,#fbbf24,#f59e0b,#fbbf24)", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "shimmer 2s ease-in-out infinite" } : {} },
+            h(IFlame), st) : null,
+          h('span', { className: "text-[9px] font-mono tabular-nums ml-auto mr-2 " + (wc >= 5 ? "text-emerald-400" : wc >= 3 ? "text-gray-400" : "text-gray-500 dark:text-gray-700") }, wc + "/7")),
+        h('div', { className: "flex gap-[3px]" },
+          last7.map(function(d) {
+            var done = hab.h[d.k], isT = d.k === today, isPop = pop === (hab.id + "-" + d.k);
+            return h('button', { key: d.k, onClick: function() { tog(hab.id, d.k); },
+              className: "hcell w-[22px] h-[22px] rounded-[6px] flex items-center justify-center text-white transition " +
+                (done ? "bg-emerald-500/80" : isT ? "bg-black/[0.04] dark:bg-white/[0.06] ring-1 ring-gray-300/30 dark:ring-gray-600/30" : "bg-black/[0.02] dark:bg-white/[0.03]") },
+              done ? h('span', { className: isPop ? "check-pop" : "" }, h(ICheck)) : null);
+          })),
+        h('button', { onClick: function() { delH(hab.id); },
+          className: "ml-1.5 p-0.5 rounded opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition" }, h(ITrash))
+      );
+    }),
+    adding
+      ? h('form', { onSubmit: addH, className: "flex gap-1.5 pt-2.5" },
+          h('input', { ref: iref, type: "text", value: nn, onChange: function(e) { sN(e.target.value); }, placeholder: "New habit",
+            onFocus: function(e) { setTimeout(function() { e.target.scrollIntoView({ behavior: "smooth", block: "center" }); }, 300); },
+            className: "flex-1 px-3 py-1.5 text-xs rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] dark:border-white/[0.06] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-white/10 transition" }),
+          h('button', { type: "submit", className: "px-3 py-1.5 text-xs font-semibold rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900" }, "Add"),
+          h('button', { type: "button", onClick: function() { sA(false); }, className: "px-2 text-xs text-gray-400" }, "Cancel"))
+      : h('button', { onClick: function() { sA(true); },
+          className: "flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300 transition pt-2" }, h(IPlus), " Add habit")
+  );
+}
+
+// ─── Milestone Card ───
+function MCard(p) {
+  var m = p.m, onDel = p.onDel;
+  var now = new Date(), tgt = new Date(m.date + "T00:00:00"), diff = tgt - now, past = diff < 0;
+  var abs = Math.abs(diff), days = Math.floor(abs / 864e5);
+  var td = m.td || days, prog = past ? 100 : Math.max(0, Math.min(100, ((td - days) / td) * 100));
+  return h('div', { className: "si glass p-4 group" },
+    h('div', { className: "flex items-center justify-between" },
+      h('div', { className: "min-w-0 flex-1" },
+        h('p', { className: "text-[13px] font-semibold text-gray-900 dark:text-white truncate" }, m.name),
+        h('p', { className: "text-[10px] text-gray-400 dark:text-gray-600 font-mono mt-0.5" },
+          tgt.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" }))),
+      h('div', { className: "flex items-center gap-2 flex-shrink-0" },
+        h('span', { className: "text-xl font-mono font-bold tabular-nums " + (past ? "text-gray-500" : "text-gray-900 dark:text-white") },
+          (past ? "-" : "") + days, h('span', { className: "text-[9px] font-normal text-gray-500 ml-0.5" }, "d")),
+        h('button', { onClick: function() { onDel(m.id); },
+          className: "p-1 rounded opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 transition" }, h(ITrash)))),
+    !past ? h('div', { className: "h-[3px] rounded-full bg-black/[0.03] dark:bg-white/[0.03] mt-3 overflow-hidden" },
+      h('div', { className: "h-full rounded-full transition-all duration-1000",
+        style: { width: prog + "%", background: "linear-gradient(90deg,#34d399,#60a5fa)" } })) : null
+  );
+}
+
+// ─── Add Milestone ───
+function AddM(p) {
+  var ns = S(""), name = ns[0], sN = ns[1];
+  var ds = S(""), date = ds[0], sD = ds[1];
+  var ref = R(null);
+  var formRef = R(null);
+  E(function() { if (ref.current) ref.current.focus(); }, []);
+  // Scroll form into view when keyboard opens on mobile
+  function scrollIntoView() {
+    if (formRef.current) {
+      setTimeout(function() { formRef.current.scrollIntoView({ behavior: "smooth", block: "center" }); }, 300);
+    }
+  }
+  function sub(e) { e.preventDefault(); if (name.trim() && date) p.onAdd({ id: Date.now(), name: name.trim(), date: date, td: Math.ceil((new Date(date + "T00:00:00") - new Date()) / 864e5) }); }
+  return h('form', { ref: formRef, onSubmit: sub, className: "si glass p-5 space-y-3" },
+    h('input', { ref: ref, type: "text", placeholder: "Counting down to\u2026", value: name,
+      onChange: function(e) { sN(e.target.value); },
+      onFocus: scrollIntoView,
+      className: "w-full px-3 py-2 text-sm rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.06] text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-white/10 transition" }),
+    h('input', { type: "date", value: date,
+      onChange: function(e) { sD(e.target.value); },
+      onFocus: scrollIntoView,
+      className: "w-full px-3 py-2 text-sm rounded-xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.06] text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-white/10 transition" }),
+    h('div', { className: "flex gap-2" },
+      h('button', { type: "submit", className: "flex-1 py-2 text-sm font-semibold rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:opacity-90 transition" }, "Add"),
+      h('button', { type: "button", onClick: p.onX, className: "px-4 py-2 text-sm rounded-xl text-gray-500 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition" }, "Cancel"))
+  );
+}
+
+// ─── Particles ───
+function Particles(p) {
+  var items = M(function() {
+    var a = [];
+    for (var i = 0; i < 30; i++) a.push({ i: i, l: Math.random() * 100, sz: Math.random() * 2 + 0.5, dur: Math.random() * 12 + 6, del: Math.random() * 8, op: Math.random() * 0.25 + 0.05 });
+    return a;
+  }, []);
+  return h('div', { className: "fixed inset-0 overflow-hidden pointer-events-none", style: { zIndex: 1 } },
+    items.map(function(pt) {
+      return h('div', { key: pt.i, className: "particle",
+        style: { left: pt.l + "%", bottom: "-5px", width: pt.sz, height: pt.sz, background: p.color, opacity: pt.op, animationDuration: pt.dur + "s", animationDelay: pt.del + "s" } });
+    })
+  );
+}
+
+// ─── Ambient Mode ───
+function Ambient(p) {
+  var t = p.t, dark = p.dark, hr = t.now.getHours(), ac = acc(hr);
+  var ts = t.now.toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit", hour12: false });
+  var sc = String(t.now.getSeconds()).padStart(2, "0");
+  var ds = t.now.toLocaleDateString("en", { weekday: "long", month: "long", day: "numeric" });
+  return h('div', { className: "fi", onClick: p.onX,
+    style: { position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", cursor: "default" } },
+    h('div', { className: "absolute inset-0 transition-colors duration-1000 " + (dark ? "bg-[#020204]" : "bg-[#fafafa]") },
+      h('div', { className: "absolute rounded-full", style: { width: 500, height: 500, top: "8%", left: "12%", background: ac.c, opacity: dark ? 0.06 : 0.08, filter: "blur(130px)", animation: "orbA 18s ease-in-out infinite" } }),
+      h('div', { className: "absolute rounded-full", style: { width: 400, height: 400, bottom: "10%", right: "8%", background: ac.c2, opacity: dark ? 0.04 : 0.06, filter: "blur(110px) hue-rotate(40deg)", animation: "orbB 14s ease-in-out infinite" } }),
+      h('div', { className: "absolute rounded-full", style: { width: 300, height: 300, top: "40%", left: "50%", background: ac.c, opacity: dark ? 0.03 : 0.04, filter: "blur(90px) hue-rotate(-30deg)", animation: "orbC 20s ease-in-out infinite" } }),
+      h(Particles, { color: ac.c })),
+    h('div', { className: "relative z-10 text-center select-none" },
+      h('div', { className: "relative w-44 h-44 mx-auto mb-10" },
+        RINGS.map(function(r, i) { return h(Ring, { key: r.l, size: r.s, pct: t[r.k], colors: r.c, label: r.l, idx: i, isActive: r.l === "Day" }); }),
+        h('div', { className: "absolute inset-0 flex items-center justify-center" },
+          h(AN, { value: t.dP, dec: 0, className: "text-lg font-mono font-bold text-gray-900 dark:text-white" }),
+          h('span', { className: "text-[10px] text-gray-400" }, "%"))),
+      h('p', { className: "fu font-mono tracking-tight tabular-nums leading-none text-gray-900 dark:text-white",
+        style: { fontSize: "clamp(4rem,14vw,9rem)", fontWeight: 100, animationDelay: "0.1s" } },
+        ts, h('span', { className: "text-gray-300 dark:text-gray-700", style: { fontSize: "0.3em", marginLeft: 6 } }, sc)),
+      h('p', { className: "fu text-sm text-gray-400 dark:text-gray-500 mt-3 tracking-wide", style: { animationDelay: "0.2s" } }, ds),
+      h('p', { className: "fu text-xs text-gray-300 dark:text-gray-700 mt-6 max-w-xs mx-auto italic", style: { animationDelay: "0.3s" } },
+        "\u201C" + tip("Day", t.dP) + "\u201D"),
+      h('p', { className: "fi text-[10px] text-gray-300 dark:text-gray-800 mt-12", style: { animationDelay: "1s" } },
+        h('span', { className: "kbd border-gray-300 dark:border-gray-800" }, "esc"), " to exit"))
+  );
+}
+
+// ─── Year Dots ───
+function YearDots(p) {
+  var dark = p.dark, ac = p.accent;
+  var now = new Date();
+  var year = now.getFullYear();
+  var startOfYear = new Date(year, 0, 1);
+  var isLeap = new Date(year, 1, 29).getDate() === 29;
+  var totalDays = isLeap ? 366 : 365;
+  var dayOfYear = Math.ceil((now - startOfYear) / 864e5);
+  var daysLeft = totalDays - dayOfYear;
+  var pct = Math.round((dayOfYear / totalDays) * 100);
+
+  var hovS = S(null), hov = hovS[0], sHov = hovS[1];
+
+  // Build month markers
+  var months = M(function() {
+    var m = [];
+    for (var i = 0; i < 12; i++) {
+      var firstDay = new Date(year, i, 1);
+      var dayNum = Math.ceil((firstDay - startOfYear) / 864e5) + 1;
+      m.push({ name: firstDay.toLocaleDateString("en", { month: "short" }), start: dayNum });
+    }
+    return m;
+  }, [year]);
+
+  function dateForDay(d) {
+    var dt = new Date(year, 0, d);
+    return dt.toLocaleDateString("en", { month: "short", day: "numeric", weekday: "short" });
+  }
+
+  // Find which month a day belongs to
+  function monthForDay(d) {
+    for (var i = months.length - 1; i >= 0; i--) {
+      if (d >= months[i].start) return i;
+    }
+    return 0;
+  }
+
+  return h('div', { className: "fi", onClick: function(e) { if (e.target === e.currentTarget) p.onClose(); },
+    style: { position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", cursor: "default" } },
+
+    // BG
+    h('div', { className: "absolute inset-0 transition-colors duration-500 " + (dark ? "bg-[#020204]/95" : "bg-[#f8f9fb]/95"),
+      style: { backdropFilter: "blur(30px)", WebkitBackdropFilter: "blur(30px)" } }),
+
+    h('div', { className: "si relative z-10 w-full max-w-lg mx-4 p-8 rounded-[32px]",
+      style: dark
+        ? { background: "linear-gradient(145deg,rgba(255,255,255,.03),rgba(255,255,255,.01))", border: "1px solid rgba(255,255,255,.07)" }
+        : { background: "linear-gradient(145deg,rgba(255,255,255,.7),rgba(255,255,255,.4))", border: "1px solid rgba(255,255,255,.8)", boxShadow: "0 30px 80px -20px rgba(0,0,0,.12)" } },
+
+      // Header
+      h('div', { className: "flex items-start justify-between mb-6" },
+        h('div', null,
+          h('p', { className: "text-3xl font-mono font-bold text-gray-900 dark:text-white tabular-nums" }, year),
+          h('p', { className: "text-xs text-gray-400 dark:text-gray-600 font-mono mt-1" },
+            "Day " + dayOfYear + " \u00B7 " + pct + "%")),
+        h('div', { className: "text-right" },
+          h('p', { className: "text-3xl font-mono font-bold tabular-nums gt", style: { background: ac.g } }, daysLeft),
+          h('p', { className: "text-xs text-gray-400 dark:text-gray-600 mt-1" }, "days left"))),
+
+      // Hover tooltip
+      hov !== null ? h('div', { className: "text-center mb-3" },
+        h('span', { className: "text-[11px] font-mono font-medium text-gray-400 dark:text-gray-500" }, dateForDay(hov))
+      ) : h('div', { className: "mb-3", style: { height: 18 } }),
+
+      // Dot grid
+      h('div', { className: "dots-grid", style: { "--ac": ac.c } },
+        (function() {
+          var dots = [];
+          for (var i = 1; i <= totalDays; i++) {
+            var isPast = i < dayOfYear;
+            var isToday = i === dayOfYear;
+            var mi = monthForDay(i);
+            var evenMonth = mi % 2 === 0;
+            var dotColor = isToday ? ac.c
+              : isPast ? (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)")
+              : (dark ? (evenMonth ? "rgba(255,255,255,.75)" : "rgba(255,255,255,.55)") : (evenMonth ? "rgba(0,0,0,.65)" : "rgba(0,0,0,.4)"));
+
+            dots.push(h('div', {
+              key: i,
+              className: "dot" + (isToday ? " dot-today" : isPast ? " dot-past" : " dot-future"),
+              onMouseEnter: function(day) { return function() { sHov(day); }; }(i),
+              onMouseLeave: function() { sHov(null); },
+              style: { background: dotColor, "--ac": ac.c }
+            }));
+          }
+          return dots;
+        })()
+      ),
+
+      // Month labels row
+      h('div', { className: "flex justify-between mt-4 px-1" },
+        months.filter(function(_, i) { return i % 2 === 0; }).map(function(m) {
+          return h('span', { key: m.name, className: "month-label" }, m.name);
+        })
+      ),
+
+      // Bottom stats
+      h('div', { className: "flex items-center justify-between mt-5 pt-4 border-t border-black/[0.04] dark:border-white/[0.04]" },
+        h('div', { className: "flex items-center gap-3" },
+          h('div', { className: "flex items-center gap-1.5" },
+            h('div', { className: "w-2 h-2 rounded-full", style: { background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)" } }),
+            h('span', { className: "text-[10px] text-gray-400 dark:text-gray-600" }, "Elapsed")),
+          h('div', { className: "flex items-center gap-1.5" },
+            h('div', { className: "w-2 h-2 rounded-full", style: { background: dark ? "rgba(255,255,255,.75)" : "rgba(0,0,0,.55)" } }),
+            h('span', { className: "text-[10px] text-gray-400 dark:text-gray-600" }, "Remaining")),
+          h('div', { className: "flex items-center gap-1.5" },
+            h('div', { className: "w-2 h-2 rounded-full", style: { background: ac.c, boxShadow: "0 0 6px " + ac.c } }),
+            h('span', { className: "text-[10px] text-gray-400 dark:text-gray-600" }, "Today"))),
+        h('span', { className: "text-[10px] text-gray-400 dark:text-gray-700" },
+          h('span', { className: "kbd border-gray-300 dark:border-gray-800" }, "esc"), " close"))
+    )
+  );
+}
+
+// ─── HourSweep ───
+function HourSweep(p) {
+  var prev = R(new Date().getHours());
+  var ss = S(false), show = ss[0], sS = ss[1];
+  E(function() {
+    var id = setInterval(function() {
+      var c = new Date().getHours();
+      if (c !== prev.current) { prev.current = c; sS(true); setTimeout(function() { sS(false); }, 3000); }
+    }, 5000);
+    return function() { clearInterval(id); };
+  }, []);
+  if (!show) return null;
+  return h('div', { className: "hour-sweep", style: { background: "linear-gradient(90deg,transparent," + p.color + " 50%,transparent)" } });
+}
+
+// ─── Notion Panel ───
+var NOTION_API = "https://momentum-notion.wadikin.workers.dev";
+
+function NotionPanel() {
+  var ls = S("loading"), loadState = ls[0], sLS = ls[1];
+  var ps = S([]), pages = ps[0], sP = ps[1];
+  var ds = S([]), dbs = ds[0], sD = ds[1];
+
+  E(function() {
+    fetch(NOTION_API + "/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ page_size: 30 })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.results) {
+        var p = [], d = [];
+        data.results.forEach(function(item) {
+          var title = "Untitled";
+          if (item.object === "database") {
+            if (item.title && item.title.length) title = item.title.map(function(t) { return t.plain_text; }).join("");
+            d.push({ id: item.id, title: title, url: item.url, edited: item.last_edited_time, icon: item.icon });
+          } else {
+            var props = item.properties || {};
+            if (props.title && props.title.title && props.title.title.length) {
+              title = props.title.title.map(function(t) { return t.plain_text; }).join("");
+            } else if (props.Name && props.Name.title && props.Name.title.length) {
+              title = props.Name.title.map(function(t) { return t.plain_text; }).join("");
+            }
+            p.push({ id: item.id, title: title || "Untitled", url: item.url, edited: item.last_edited_time, icon: item.icon });
+          }
+        });
+        sP(p); sD(d); sLS("ok");
+      } else { sLS("error"); }
+    })
+    .catch(function() { sLS("error"); });
+  }, []);
+
+  function timeAgo(iso) {
+    var diff = Date.now() - new Date(iso).getTime();
+    var mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + "m ago";
+    var hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + "h ago";
+    return Math.floor(hrs / 24) + "d ago";
+  }
+
+  function iconFor(ic) {
+    if (!ic) return null;
+    if (ic.type === "emoji") return h('span', { className: "text-sm" }, ic.emoji);
+    return null;
+  }
+
+  if (loadState === "loading") {
+    return h('div', { className: "flex items-center justify-center py-6" },
+      h('span', { className: "text-xs text-gray-400 dark:text-gray-600" }, "Connecting to Notion\u2026"));
+  }
+  if (loadState === "error") {
+    return h('div', { className: "flex items-center justify-center py-6" },
+      h('span', { className: "text-xs text-red-400" }, "Could not connect to Notion"));
+  }
+
+  var all = dbs.map(function(d) { return Object.assign({}, d, { type: "db" }); })
+    .concat(pages.map(function(p) { return Object.assign({}, p, { type: "page" }); }))
+    .sort(function(a, b) { return new Date(b.edited) - new Date(a.edited); });
+
+  if (all.length === 0) {
+    return h('div', { className: "text-center py-4" },
+      h('p', { className: "text-xs text-gray-400 dark:text-gray-600" }, "No pages shared with integration"),
+      h('p', { className: "text-[10px] text-gray-400 dark:text-gray-700 mt-1" }, "Share pages in Notion \u2192 ... \u2192 Connections"));
+  }
+
+  return h('div', { className: "space-y-1" },
+    all.slice(0, 8).map(function(item) {
+      return h('a', { key: item.id, href: item.url, target: "_blank", rel: "noopener",
+        className: "flex items-center gap-2.5 py-2 px-2 -mx-2 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.03] transition group" },
+        h('span', { className: "flex-shrink-0 w-5 text-center" },
+          iconFor(item.icon) || (item.type === "db" ? h(IGrid, { className: "text-gray-400" }) : h(INotion, { className: "text-gray-400" }))),
+        h('div', { className: "flex-1 min-w-0" },
+          h('p', { className: "text-[13px] text-gray-700 dark:text-gray-300 truncate group-hover:text-gray-900 dark:group-hover:text-white transition" }, item.title),
+          h('p', { className: "text-[9px] text-gray-400 dark:text-gray-700 font-mono" },
+            (item.type === "db" ? "Database" : "Page") + " \u00B7 " + timeAgo(item.edited))),
+        h(ILink, { className: "flex-shrink-0 text-gray-300 dark:text-gray-700 opacity-0 group-hover:opacity-100 transition" })
+      );
+    }),
+    all.length > 8 ? h('p', { className: "text-[10px] text-gray-400 dark:text-gray-700 text-center pt-1" },
+      "+" + (all.length - 8) + " more") : null
+  );
+}
+
+// ─── QuoteRotator ───
+function QuoteR() {
+  var qs = S(0), qi = qs[0], sQ = qs[1];
+  var ks = S(0), k = ks[0], sK = ks[1];
+  E(function() { var id = setInterval(function() { sQ(function(i) { return (i + 1) % QTS.length; }); sK(function(v) { return v + 1; }); }, 8000); return function() { clearInterval(id); }; }, []);
+  return h('p', { key: k, className: "text-[10px] text-gray-300 dark:text-gray-700 italic max-w-sm mx-auto leading-relaxed",
+    style: { animation: "quoteFade 8s ease both" } }, "\u201C" + QTS[qi] + "\u201D");
+}
+
+// ─── App ───
+function App() {
+  var ds = S(function() { return window.matchMedia("(prefers-color-scheme:dark)").matches; }), dark = ds[0], sDk = ds[1];
+  var ts = S(getTP), time = ts[0], sT = ts[1];
+  var fs = S(false), focus = fs[0], sF = fs[1];
+  var sf = S(false), showForm = sf[0], sSF = sf[1];
+  var ab = S(false), amb = ab[0], sAm = ab[1];
+  var yd = S(false), yearDots = yd[0], sYd = yd[1];
+  var ck = S(false), cmdkOpen = ck[0], sCk = ck[1];
+  var cq = S(""), cmdkQ = cq[0], sCq = cq[1];
+  var nameS = S(function() { try { return localStorage.getItem("m_name") || ""; } catch(e) { return ""; } }), userName = nameS[0], sName = nameS[1];
+  var enS = S(false), editName = enS[0], sEN = enS[1];
+  var noteS = S(function() { try { return localStorage.getItem("m_note") || ""; } catch(e) { return ""; } }), note = noteS[0], sNote = noteS[1];
+  var ms = S(function() {
+    try { var s = JSON.parse(localStorage.getItem("mm2")); if (s && s.length) return s; } catch(e) {}
+    return [{ id: 1, name: "Q2 Review", date: "2026-06-30", td: 95 }, { id: 2, name: "Product Launch", date: "2026-09-15", td: 172 }];
+  }), mils = ms[0], sMs = ms[1];
+
+  // History for real sparklines
+  var histS = S(function() { try { return JSON.parse(localStorage.getItem("m_history") || "{}"); } catch(e) { return {}; } });
+  var history = histS[0], sHist = histS[1];
+
+  E(function() { var id = setInterval(function() { sT(getTP()); }, 1000); return function() { clearInterval(id); }; }, []);
+  E(function() { document.documentElement.classList.toggle("dark", dark); document.documentElement.classList.toggle("light", !dark); }, [dark]);
+  E(function() { localStorage.setItem("mm2", JSON.stringify(mils)); }, [mils]);
+
+  // Save snapshot every 5 minutes
+  var snapTimer = R(null);
+  E(function() {
+    function doSnap() { var d = saveSnapshot(time); sHist(d); }
+    doSnap(); // immediate
+    snapTimer.current = setInterval(doSnap, 300000);
+    return function() { clearInterval(snapTimer.current); };
+  }, []);
+
+  // Sparkline data from real history
+  var sparkD = M(function() {
+    var d = {};
+    RINGS.forEach(function(r) {
+      var real = getSparkData(history, r.k, 7);
+      if (real) { d[r.k] = real; }
+      else {
+        // Fallback: generate from current value until we have history
+        var v = time[r.k], a = [];
+        for (var i = 6; i >= 0; i--) a.push(Math.max(0, Math.min(100, v - i * v / 7 * (0.7 + Math.random() * 0.6))));
+        a[6] = v; d[r.k] = a;
+      }
+    });
+    return d;
+  }, [history, Math.floor(time.yP)]);
+
+  var noteTimer = R(null);
+  function updateNote(v) {
+    sNote(v); clearTimeout(noteTimer.current);
+    noteTimer.current = setTimeout(function() { localStorage.setItem("m_note", v); }, 500);
+  }
+
+  function saveName(n) { sName(n); localStorage.setItem("m_name", n); sEN(false); }
+
+  // Keyboard shortcuts
+  E(function() {
+    function fn(e) {
+      if (cmdkOpen) return;
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); sCk(true); sCq(""); return; }
+      if (e.key === "d" || e.key === "D") sDk(function(v) { return !v; });
+      if (e.key === "f" || e.key === "F") sF(function(v) { return !v; });
+      if (e.key === "a" || e.key === "A") { sAm(function(v) { return !v; }); return; }
+      if (e.key === "y" || e.key === "Y") { sYd(function(v) { return !v; }); return; }
+      if (e.key === "Escape") { sAm(false); sYd(false); }
+    }
+    window.addEventListener("keydown", fn);
+    return function() { window.removeEventListener("keydown", fn); };
+  }, [cmdkOpen]);
+
+  var cmdActs = M(function() {
+    return [
+      { id: "theme", label: dark ? "Switch to light" : "Switch to dark", kw: "theme dark light toggle", ic: dark ? ISun : IMoon, sc: "D", fn: function() { sDk(function(v) { return !v; }); } },
+      { id: "focus", label: focus ? "Disable focus" : "Enable focus", kw: "focus work pomodoro", ic: IZap, sc: "F", fn: function() { sF(function(v) { return !v; }); } },
+      { id: "ambient", label: "Ambient mode", kw: "ambient fullscreen zen", ic: IExpand, sc: "A", fn: function() { sAm(true); } },
+      { id: "yeardots", label: "Year in dots", kw: "year dots progress calendar grid", ic: IGrid, sc: "Y", fn: function() { sYd(true); } },
+      { id: "milestone", label: "Add milestone", kw: "milestone countdown deadline", ic: ITarget, fn: function() { sSF(true); } },
+      { id: "pomo", label: "Start pomodoro", kw: "pomodoro timer start", ic: IPlay, fn: function() { sF(true); } },
+      { id: "name", label: "Set your name", kw: "name personalize greeting", ic: IUser, fn: function() { sEN(true); } }
+    ];
+  }, [dark, focus]);
+
+  var addM = C(function(m) { sMs(function(p) { return p.concat([m]).sort(function(a, b) { return new Date(a.date) - new Date(b.date); }); }); sSF(false); }, []);
+  var delM = C(function(id) { sMs(function(p) { return p.filter(function(x) { return x.id !== id; }); }); }, []);
+
+  var hr = time.now.getHours(), ac = acc(hr), gr = greet(hr, userName);
+  var emphasis = emph(hr, time);
+  var dateStr = time.now.toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric" });
+  var timeStr = time.now.toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit", hour12: false });
+  var secStr = String(time.now.getSeconds()).padStart(2, "0");
+  var fH = Math.floor(time.wdR / 60), fM = time.wdR % 60;
+
+  var bgStyle = dark
+    ? { background: "radial-gradient(ellipse 80% 60% at 50% -20%," + ac.c + "08,transparent),#06060a" }
+    : { background: "radial-gradient(ellipse 80% 60% at 50% -20%," + ac.c + "12,transparent),#f8f9fb" };
+
+  if (amb) return h(Ambient, { t: time, onX: function() { sAm(false); }, dark: dark });
+
+  return h('div', { className: "noise min-h-screen transition-colors duration-1000", style: bgStyle },
+    h(HourSweep, { color: ac.c }),
+    h(Particles, { color: ac.c }),
+    cmdkOpen ? h(CmdK, { query: cmdkQ, setQuery: sCq, onClose: function() { sCk(false); }, actions: cmdActs }) : null,
+    yearDots ? h(YearDots, { dark: dark, accent: ac, onClose: function() { sYd(false); } }) : null,
+
+    // Background blobs
+    h('div', { className: "fixed inset-0 pointer-events-none overflow-hidden", style: { zIndex: 0 } },
+      h('div', { className: "blob1 absolute -top-40 -right-40",
+        style: { width: 700, height: 700, background: ac.c, opacity: dark ? 0.025 : 0.04, filter: "blur(160px)", transition: "all 6s" } }),
+      h('div', { className: "blob2 absolute -bottom-56 -left-40",
+        style: { width: 600, height: 600, background: ac.c2, opacity: dark ? 0.02 : 0.03, filter: "blur(140px) hue-rotate(50deg)", transition: "all 6s" } })),
+
+    h('div', { className: "relative max-w-2xl mx-auto px-5 py-8 md:py-12", style: { zIndex: 2 } },
+
+      // ── HERO HEADER ──
+      h('header', { className: "fu mb-10" },
+        h('div', { className: "flex items-start justify-between mb-6" },
+          h('div', null,
+            h('div', { className: "flex items-center gap-2" },
+              h('p', { className: "text-[10px] font-bold uppercase tracking-[0.25em] transition-colors duration-[3s]", style: { color: ac.c } }, gr),
+              !userName && !editName ? h('button', { onClick: function() { sEN(true); },
+                className: "text-[9px] text-gray-500 hover:text-gray-300 transition opacity-60 hover:opacity-100" }, "\u270E") : null),
+            editName ? h('div', { className: "si flex items-center gap-2 mt-2" },
+              h('input', { type: "text", defaultValue: userName, placeholder: "Your name", autoFocus: true,
+                onKeyDown: function(e) { if (e.key === "Enter") saveName(e.target.value); if (e.key === "Escape") sEN(false); },
+                className: "px-2.5 py-1 text-xs rounded-lg bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] dark:border-white/[0.06] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none w-28" }),
+              h('span', { className: "text-[9px] text-gray-500" }, "enter to save")) : null),
+          h('div', { className: "flex gap-1" },
+            h('button', { onClick: function() { sCk(true); sCq(""); }, title: "\u2318K",
+              className: "p-2.5 rounded-2xl text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition" }, h(ICmd)),
+            h('button', { onClick: function() { sYd(true); }, title: "Year dots",
+              className: "p-2.5 rounded-2xl text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition" }, h(IGrid)),
+            h('button', { onClick: function() { sAm(true); }, title: "Ambient",
+              className: "p-2.5 rounded-2xl text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition" }, h(IExpand)),
+            h('button', { onClick: function() { sDk(!dark); }, title: "Theme",
+              className: "p-2.5 rounded-2xl text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition" }, dark ? h(ISun) : h(IMoon)))),
+
+        // Giant time
+        h('div', { className: "flex items-baseline gap-3" },
+          h('span', { className: "hero-time font-mono tabular-nums gt", style: { background: ac.g } }, timeStr),
+          h('span', { className: "hero-sec text-xl font-mono font-light tabular-nums text-gray-300 dark:text-gray-700", style: { marginBottom: 4 } }, secStr)),
+        h('p', { className: "text-xs text-gray-400 dark:text-gray-600 font-mono mt-2 tabular-nums" }, dateStr),
+        h('p', { className: "text-[11px] text-gray-400 dark:text-gray-600 mt-1 font-medium" }, emphasis)),
+
+      // ── MAIN CONTENT ──
+      h('div', { className: "space-y-3" },
+
+        // Top row: Hero + Stats side-by-side on desktop
+        h('div', { className: "top-row" },
+
+        // Hero Day Card
+        (function() {
+          var dVal = time.dP, left = 100 - dVal, hrsLeft = Math.ceil(24 - hr - time.now.getMinutes() / 60);
+          var arcR = 90, arcSw = 5, arcCi = Math.PI * arcR, arcOff = arcCi - (Math.min(dVal, 100) / 100) * arcCi;
+          var dayCol = RINGS[3].c;
+          return h('div', { className: "fu hero-card p-5 sm:p-8 md:p-10 group", style: { animationDelay: "0.08s" } },
+            h('div', { className: "hero-glow absolute inset-0 pointer-events-none",
+              style: { background: "radial-gradient(circle at 30% 50%," + dayCol[0] + "10,transparent 60%)" } }),
+
+            // ── Mobile compact layout ──
+            h('div', { className: "hero-compact relative items-center gap-4", style: { display: "none" } },
+              h('div', { className: "flex-1" },
+                h('p', { className: "text-[8px] font-bold uppercase tracking-[0.3em] mb-1", style: { color: dayCol[0] } }, "Day Remaining"),
+                h('div', { className: "flex items-baseline gap-1.5" },
+                  h('span', { className: "gt font-mono font-black tabular-nums leading-none",
+                    style: { fontSize: "2.2rem", background: "linear-gradient(135deg," + dayCol[0] + "," + dayCol[1] + ")" } },
+                    h(AN, { value: left, dec: 0 })),
+                  h('span', { className: "text-sm text-gray-400 dark:text-gray-700 font-light" }, "%")),
+                h('p', { className: "text-[11px] text-gray-400 dark:text-gray-600 mt-1" }, tip("Day", dVal))),
+              h('div', { className: "flex items-center gap-3 flex-shrink-0" },
+                h('div', { className: "text-center" },
+                  h('p', { className: "text-lg font-mono font-bold tabular-nums text-gray-900 dark:text-white" }, hrsLeft + "h"),
+                  h('p', { className: "text-[8px] text-gray-400 dark:text-gray-600 uppercase" }, "left")),
+                h('div', { className: "w-px h-6 bg-black/[0.05] dark:bg-white/[0.05]" }),
+                h('div', { className: "text-center" },
+                  h('p', { className: "text-lg font-mono font-bold tabular-nums text-gray-900 dark:text-white" },
+                    h(AN, { value: dVal, dec: 0, sfx: "%" })),
+                  h('p', { className: "text-[8px] text-gray-400 dark:text-gray-600 uppercase" }, "done"))),
+              // Compact progress bar
+              h('div', { className: "w-full h-[3px] rounded-full bg-black/[0.04] dark:bg-white/[0.04] mt-3 overflow-hidden" },
+                h('div', { className: "h-full rounded-full transition-all duration-1000",
+                  style: { width: Math.min(dVal, 100) + "%", background: "linear-gradient(90deg," + dayCol[0] + "," + dayCol[1] + ")", boxShadow: "0 0 8px " + dayCol[0] + "40" } }))),
+
+            // ── Desktop arc layout ──
+            h('div', { className: "hero-arc relative flex flex-col sm:flex-row items-center gap-8" },
+              h('div', { className: "relative flex-shrink-0", style: { width: 190, height: 100 } },
+                h('svg', { width: 190, height: 100, viewBox: "0 0 190 100", className: "overflow-visible" },
+                  h('defs', null,
+                    h('linearGradient', { id: "heroArc", x1: "0%", y1: "0%", x2: "100%", y2: "0%" },
+                      h('stop', { offset: "0%", stopColor: dayCol[0] }),
+                      h('stop', { offset: "100%", stopColor: dayCol[1] }))),
+                  h('path', { d: "M 5 95 A 90 90 0 0 1 185 95", fill: "none", stroke: "currentColor",
+                    className: "text-black/[0.04] dark:text-white/[0.04]", strokeWidth: arcSw, strokeLinecap: "round" }),
+                  h('path', { d: "M 5 95 A 90 90 0 0 1 185 95", fill: "none", stroke: "url(#heroArc)",
+                    strokeWidth: arcSw, strokeLinecap: "round", strokeDasharray: arcCi, strokeDashoffset: arcOff,
+                    className: "arc-sweep", style: { "--arc-total": arcCi, "--arc-offset": arcOff } }),
+                  h('path', { d: "M 5 95 A 90 90 0 0 1 185 95", fill: "none", stroke: "url(#heroArc)",
+                    strokeWidth: arcSw + 6, strokeLinecap: "round", strokeDasharray: arcCi, strokeDashoffset: arcOff,
+                    opacity: 0.15, style: { filter: "blur(6px)", "--arc-total": arcCi, "--arc-offset": arcOff } })),
+                h('div', { className: "absolute", style: { top: "35%", left: "50%", transform: "translate(-50%,-20%)" } },
+                  h('span', { className: "gt font-mono font-black tabular-nums leading-none",
+                    style: { fontSize: "3.8rem", background: "linear-gradient(135deg," + dayCol[0] + "," + dayCol[1] + ")" } },
+                    h(AN, { value: left, dec: 0 })),
+                  h('span', { className: "text-xl text-gray-300 dark:text-gray-700 font-light ml-1" }, "%"))),
+              h('div', { className: "flex-1 text-center sm:text-left" },
+                h('p', { className: "text-[9px] font-bold uppercase tracking-[0.3em] mb-2", style: { color: dayCol[0] } }, "Day Remaining"),
+                h('p', { className: "text-sm text-gray-400 dark:text-gray-500 font-medium mb-4" }, tip("Day", dVal)),
+                h('div', { className: "flex items-center gap-4 justify-center sm:justify-start" },
+                  h('div', null,
+                    h('p', { className: "text-2xl font-mono font-bold tabular-nums text-gray-900 dark:text-white" }, hrsLeft + "h"),
+                    h('p', { className: "text-[9px] text-gray-400 dark:text-gray-600 uppercase tracking-wider" }, "left")),
+                  h('div', { className: "w-px h-8 bg-black/[0.05] dark:bg-white/[0.05]" }),
+                  h('div', null,
+                    h('p', { className: "text-2xl font-mono font-bold tabular-nums text-gray-900 dark:text-white" },
+                      h(AN, { value: dVal, dec: 0, sfx: "%" })),
+                    h('p', { className: "text-[9px] text-gray-400 dark:text-gray-600 uppercase tracking-wider" }, "elapsed")))))
+          );
+        })(),
+
+        // Year / Month / Week stat row
+        h('div', { className: "stat-row fu", style: { animationDelay: "0.18s" } },
+          [RINGS[0], RINGS[1], RINGS[2]].map(function(r) {
+            var val = time[r.k];
+            var sub = r.l === "Year" ? "Day " + Math.ceil(val / 100 * 365) + "/365"
+              : r.l === "Month" ? "Day " + time.now.getDate()
+              : "Day " + (time.now.getDay() || 7) + "/7";
+            return h('div', { key: r.l, className: "mini-card p-4 group" + (r.l === "Year" ? " cursor-pointer" : ""),
+              onClick: r.l === "Year" ? function() { sYd(true); } : undefined },
+              h('div', { className: "flex items-center gap-1.5 mb-3" },
+                h('div', { className: "w-1.5 h-1.5 rounded-full", style: { background: r.c[0], boxShadow: "0 0 6px " + r.c[0] + "50" } }),
+                h('span', { className: "text-[8px] font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-600" }, r.l),
+                h('div', { className: "ml-auto" }, h(Spark, { data: sparkD[r.k], color: r.c[0], w: 40, h: 14, id: r.l }))),
+              h('div', { className: "flex items-baseline gap-0.5" },
+                h('span', { className: "gt font-mono font-bold tabular-nums leading-none",
+                  style: { fontSize: "1.8rem", background: "linear-gradient(135deg," + r.c[0] + "," + r.c[1] + ")" } },
+                  h(AN, { value: val, dec: 1 })),
+                h('span', { className: "text-sm text-gray-400 dark:text-gray-700 font-light" }, "%")),
+              h('div', { className: "h-[2px] rounded-full bg-black/[0.03] dark:bg-white/[0.03] mt-2.5 overflow-hidden" },
+                h('div', { className: "h-full rounded-full transition-all duration-1000",
+                  style: { width: Math.min(val, 100) + "%", background: "linear-gradient(90deg," + r.c[0] + "," + r.c[1] + ")", boxShadow: "0 0 8px " + r.c[0] + "30" } })),
+              h('p', { className: "text-[9px] font-mono tabular-nums text-gray-400 dark:text-gray-700 mt-2" }, sub));
+          })
+        ), // close stat-row
+        ), // close top-row
+
+        // Bento grid
+        h('div', { className: "bento" },
+
+          // Quick Note
+          h('div', { className: "fu glass p-5", style: { animationDelay: "0.28s" } },
+            h('div', { className: "flex items-center gap-2 mb-3" },
+              h(IEdit, { className: "text-gray-400" }),
+              h('span', { className: "text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 dark:text-gray-600" }, "Quick Note")),
+            h('textarea', { value: note, onChange: function(e) { updateNote(e.target.value); },
+              onFocus: function(e) { setTimeout(function() { e.target.scrollIntoView({ behavior: "smooth", block: "center" }); }, 300); },
+              placeholder: "What\u2019s on your mind today\u2026", rows: 4,
+              className: "w-full bg-transparent text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-700 focus:outline-none resize-none leading-relaxed" })),
+
+          // Focus + Pomodoro
+          h('div', { className: "fu glass p-5 transition-all duration-500 " + (focus ? "focus-glow" : ""), style: { animationDelay: "0.32s" } },
+            h('div', { className: "flex items-center justify-between mb-3" },
+              h('div', { className: "flex items-center gap-2" },
+                h(IZap, { className: focus ? "text-blue-400" : "text-gray-400" }),
+                h('span', { className: "text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 dark:text-gray-600" }, "Focus"),
+                time.wdP > 0 && time.wdP < 100
+                  ? h('span', { className: "text-[10px] font-mono text-gray-400 dark:text-gray-600 tabular-nums" }, "\u00B7 " + fH + "h" + fM + "m left") : null),
+              h('button', { onClick: function() { sF(!focus); },
+                className: "relative w-11 h-6 rounded-full transition-colors duration-300 " + (focus ? "bg-blue-500" : "bg-black/[0.05] dark:bg-white/[0.06]") },
+                h('div', { className: "tog-k absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white shadow-sm",
+                  style: { left: focus ? "calc(100% - 21px)" : "3px" } }))),
+            focus ? h('div', { className: "h-1 rounded-full bg-black/[0.03] dark:bg-white/[0.03] mb-4 overflow-hidden" },
+              h('div', { className: "h-full rounded-full transition-all duration-1000",
+                style: { width: time.wdP + "%", background: "linear-gradient(90deg,#3b82f6,#60a5fa)" } })) : null,
+            h('div', { className: "coll " + (focus ? "open" : "") },
+              h('div', { className: "coll-i" }, h(Pomo)))),
+
+          // Habits
+          h('div', { className: "bento-scroll fu glass p-5", style: { animationDelay: "0.4s" } },
+            h('div', { className: "flex items-center gap-2 mb-3" },
+              h(IFlame, { className: "text-orange-400" }),
+              h('span', { className: "text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 dark:text-gray-600" }, "Habits")),
+            h(Habits)),
+
+          // Milestones
+          h('div', { className: "bento-scroll fu glass p-5", style: { animationDelay: "0.48s" } },
+            h('div', { className: "flex items-center justify-between mb-3" },
+              h('div', { className: "flex items-center gap-2" },
+                h(ITarget, { className: "text-gray-400" }),
+                h('span', { className: "text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 dark:text-gray-600" }, "Milestones")),
+              !showForm ? h('button', { onClick: function() { sSF(true); },
+                className: "flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition" },
+                h(IPlus), " Add") : null),
+            h('div', { className: "space-y-2" },
+              showForm ? h(AddM, { onAdd: addM, onX: function() { sSF(false); } }) : null,
+              mils.map(function(m) { return h(MCard, { key: m.id, m: m, onDel: delM }); }),
+              mils.length === 0 && !showForm ? h('p', { className: "text-center py-8 text-xs text-gray-400 dark:text-gray-700" }, "No milestones yet") : null)),
+
+          // Notion
+          h('div', { className: "span2 bento-scroll fu glass p-5", style: { animationDelay: "0.56s" } },
+            h('div', { className: "flex items-center gap-2 mb-3" },
+              h(INotion, { className: "text-gray-400" }),
+              h('span', { className: "text-[9px] font-bold uppercase tracking-[0.25em] text-gray-400 dark:text-gray-600" }, "Notion")),
+            h(NotionPanel))
+        ) // close bento
+      ), // close space-y-3
+
+      // Footer
+      h('footer', { className: "fi mt-10 text-center space-y-5", style: { animationDelay: "1s" } },
+        h(QuoteR),
+        h('div', { className: "flex items-center justify-center gap-4 text-[8px] text-gray-300 dark:text-gray-800 flex-wrap" },
+          h('span', null, h('span', { className: "kbd border-gray-200 dark:border-gray-800" }, "\u2318K"), " commands"),
+          h('span', null, h('span', { className: "kbd border-gray-200 dark:border-gray-800" }, "D"), " theme"),
+          h('span', null, h('span', { className: "kbd border-gray-200 dark:border-gray-800" }, "F"), " focus"),
+          h('span', null, h('span', { className: "kbd border-gray-200 dark:border-gray-800" }, "Y"), " year"),
+          h('span', null, h('span', { className: "kbd border-gray-200 dark:border-gray-800" }, "A"), " ambient")))
+    ) // close max-w container
+  ); // close root div
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>
