@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Trash2, Target, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { pushMilestones, deleteMilestoneRemote } from '@/lib/sync'
 import type { Milestone } from '@/types'
 
@@ -27,16 +27,16 @@ function MilestoneCard({ m, onDelete }: { m: Milestone; onDelete: (id: number) =
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-xl font-mono font-bold tabular-nums" style={{ color: past ? 'var(--text-4)' : 'var(--text)' }}>
+          <span className="text-xl font-mono font-semibold tabular-nums" style={{ color: past ? 'var(--text-4)' : 'var(--text)' }}>
             {past ? '-' : ''}{days}<span className="text-[9px] font-normal ml-0.5" style={{ color: 'var(--text-4)' }}>d</span>
           </span>
-          <button onClick={() => onDelete(m.id)} className="p-1 rounded opacity-0 group-hover:opacity-100 hover:text-red-400 transition" style={{ color: 'var(--text-3)' }}>
-            <Trash2 size={11} />
-          </button>
+          <Button variant="ghost" size="icon" onClick={() => onDelete(m.id)} className="size-6 opacity-0 group-hover:opacity-100 transition">
+            <Trash2 size={11} aria-hidden="true" />
+          </Button>
         </div>
       </div>
       {!past && (
-        <div className="h-[3px] rounded-full mt-3 overflow-hidden" style={{ background: 'var(--track)' }}>
+        <div className="h-1 rounded-full mt-3 overflow-hidden" style={{ background: 'var(--track)' }}>
           <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${prog}%`, background: 'linear-gradient(90deg,#34d399,#60a5fa)' }} />
         </div>
       )}
@@ -55,7 +55,7 @@ function AddForm({ onAdd, onClose }: { onAdd: (m: Milestone) => void; onClose: (
     }
   }
   return (
-    <form onSubmit={submit} className="p-5 space-y-3">
+    <form onSubmit={submit} className="p-4 flex flex-col gap-3">
       <p className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>New milestone</p>
       <Input placeholder="Counting down to…" value={name} onChange={e => setName(e.target.value)} autoFocus />
       <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
@@ -100,18 +100,17 @@ export function Milestones({ initialMilestones }: Props) {
 
   return (
     <>
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         {milestones.map(m => <MilestoneCard key={m.id} m={m} onDelete={remove} />)}
-        <button onClick={() => setShowForm(true)}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed transition text-xs"
-          style={{ borderColor: 'var(--border)', color: 'var(--text-3)' }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-          <Plus size={12} /><Target size={12} /> Add milestone
-        </button>
+        <Button variant="outline" onClick={() => setShowForm(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-dashed text-xs"
+          style={{ borderColor: 'var(--border)', color: 'var(--text-3)' }}>
+          <Plus size={12} aria-hidden="true" /><Target size={12} aria-hidden="true" /> Add milestone
+        </Button>
       </div>
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
+          <DialogTitle className="sr-only">New Milestone</DialogTitle>
           <AddForm onAdd={add} onClose={() => setShowForm(false)} />
         </DialogContent>
       </Dialog>

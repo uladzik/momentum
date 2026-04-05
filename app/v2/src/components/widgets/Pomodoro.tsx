@@ -79,26 +79,26 @@ export function Pomodoro() {
             style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 1s linear' }} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-mono font-bold tabular-nums" style={{ color: 'var(--text)' }}>
+          <span className="text-sm font-mono font-semibold tabular-nums" style={{ color: 'var(--text)' }}>
             {String(mn).padStart(2, '0')}:{String(sc).padStart(2, '0')}
           </span>
-          <span className="text-[7px] uppercase tracking-[0.15em] font-semibold mt-0.5" style={{ color: col }}>
+          <span className="text-xs uppercase tracking-[0.15em] font-semibold mt-0.5" style={{ color: col }}>
             {isBreak ? 'break' : 'focus'}
           </span>
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="flex flex-col gap-1.5">
         <div className="flex gap-1">
-          <Button size="icon" variant={running ? 'default' : 'secondary'} className="h-7 w-7" onClick={() => setRunning(r => !r)}>
+          <Button size="icon" variant={running ? 'default' : 'secondary'} className="size-7" onClick={() => setRunning(r => !r)}>
             {running ? <Pause size={11} /> : <Play size={11} />}
           </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={reset}>
+          <Button size="icon" variant="ghost" className="size-7" onClick={reset}>
             <RotateCcw size={11} />
           </Button>
         </div>
         <div className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-3)' }}>
-          <Flame size={10} className="text-orange-400" />
+          <Flame size={10} aria-hidden="true" style={{ color: 'oklch(var(--pomo-focus))' }} />
           <span className="font-mono font-semibold">{todaySessions} today</span>
         </div>
       </div>

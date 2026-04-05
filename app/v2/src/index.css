@@ -71,6 +71,10 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --habit-streak: oklch(0.696 0.17 162.48);
+  --habit-done: oklch(0.696 0.17 162.48);
+  --pomo-focus: oklch(0.705 0.183 55.934);
+  --milestone: oklch(0.588 0.158 261.147);
 }
 
 html.dark {
@@ -88,6 +92,10 @@ html.dark {
   --track:        rgba(255,255,255,0.05);
   --input-bg:     rgba(255,255,255,0.02);
   --shadow-card:  0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.4);
+  --habit-streak: oklch(0.696 0.17 162.48);
+  --habit-done: oklch(0.696 0.17 162.48);
+  --pomo-focus: oklch(0.705 0.183 55.934);
+  --milestone: oklch(0.623 0.214 259.815);
 }
 
 @layer base {
@@ -296,7 +304,7 @@ html.dark {
 .dot:hover { transform: scale(1.6); z-index: 10; }
 .dot-today { box-shadow: 0 0 8px var(--ac), 0 0 16px var(--ac); transform: scale(1.2); }
 
-.month-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,.3); }
+.month-label { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,.3); }
 .light .month-label { color: rgba(0,0,0,.25); }
 
 /* ── Kbd ── */

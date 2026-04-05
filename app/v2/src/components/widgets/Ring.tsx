@@ -36,7 +36,7 @@ export function Ring({ size: sz, pct, colors, label, idx, isActive }: Props) {
             <stop offset="100%" stopColor={colors[1]} />
           </linearGradient>
         </defs>
-        <circle cx={c} cy={c} r={r} fill="none" stroke="currentColor" className="text-black/[0.03] dark:text-white/[0.03]" strokeWidth={sw} />
+        <circle cx={c} cy={c} r={r} fill="none" stroke="currentColor" className="text-foreground/[0.03]" strokeWidth={sw} />
         <circle
           cx={c} cy={c} r={r} fill="none" stroke={`url(#${gid})`} strokeWidth={sw}
           strokeLinecap="round" strokeDasharray={ci}

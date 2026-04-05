@@ -42,23 +42,23 @@ export function YearDots({ dark, accent: ac, onClose }: Props) {
       <div className={`absolute inset-0 transition-colors duration-500 ${dark ? 'bg-[#020204]/95' : 'bg-[#f8f9fb]/95'}`}
         style={{ backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)' }} onClick={onClose} />
 
-      <div className="si relative z-10 w-full max-w-lg mx-4 p-8 rounded-[32px]"
+      <div className="si relative z-10 w-full max-w-lg mx-4 p-8 rounded-3xl"
         style={dark
           ? { background: 'linear-gradient(145deg,rgba(255,255,255,.03),rgba(255,255,255,.01))', border: '1px solid rgba(255,255,255,.07)' }
           : { background: 'linear-gradient(145deg,rgba(255,255,255,.7),rgba(255,255,255,.4))', border: '1px solid rgba(255,255,255,.8)', boxShadow: '0 30px 80px -20px rgba(0,0,0,.12)' }}>
 
         <div className="flex items-start justify-between mb-6">
           <div>
-            <p className="text-3xl font-mono font-bold text-gray-900 dark:text-white tabular-nums">{year}</p>
+            <p className="text-3xl font-mono font-semibold text-gray-900 dark:text-white tabular-nums">{year}</p>
             <p className="text-xs text-gray-400 dark:text-gray-600 font-mono mt-1">Day {dayOfYear} · {pct}%</p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-mono font-bold tabular-nums gt" style={{ background: ac.g }}>{daysLeft}</p>
+            <p className="text-3xl font-mono font-semibold tabular-nums gt" style={{ background: ac.g }}>{daysLeft}</p>
             <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">days left</p>
           </div>
         </div>
 
-        <div className="text-center mb-3" style={{ height: 18 }}>
+        <div className="text-center mb-3 h-5">
           {hov !== null && <span className="text-[11px] font-mono font-medium text-gray-400 dark:text-gray-500">{dateForDay(hov)}</span>}
         </div>
 
@@ -68,8 +68,8 @@ export function YearDots({ dark, accent: ac, onClose }: Props) {
             const isPast = i < dayOfYear, isToday = i === dayOfYear
             const mi = monthForDay(i), evenMonth = mi % 2 === 0
             const bg = isToday ? ac.c
-              : isPast ? (dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)')
-              : (dark ? (evenMonth ? 'rgba(255,255,255,.75)' : 'rgba(255,255,255,.55)') : (evenMonth ? 'rgba(0,0,0,.65)' : 'rgba(0,0,0,.4)'))
+              : isPast ? (dark ? 'oklch(var(--foreground) / 0.12)' : 'oklch(var(--foreground) / 0.1)')
+              : (dark ? (evenMonth ? 'oklch(var(--foreground) / 0.75)' : 'oklch(var(--foreground) / 0.55)') : (evenMonth ? 'oklch(var(--foreground) / 0.65)' : 'oklch(var(--foreground) / 0.4)'))
             return (
               <div key={i} className={`dot${isToday ? ' dot-today' : isPast ? ' dot-past' : ' dot-future'}`}
                 style={{ background: bg, '--ac': ac.c } as React.CSSProperties}
@@ -87,12 +87,12 @@ export function YearDots({ dark, accent: ac, onClose }: Props) {
         <div className="flex items-center justify-between mt-5 pt-4 border-t border-black/[0.04] dark:border-white/[0.04]">
           <div className="flex items-center gap-3">
             {[
-              { bg: dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)', label: 'Elapsed' },
-              { bg: dark ? 'rgba(255,255,255,.75)' : 'rgba(0,0,0,.55)', label: 'Remaining' },
+              { bg: dark ? 'oklch(var(--foreground) / 0.12)' : 'oklch(var(--foreground) / 0.1)', label: 'Elapsed' },
+              { bg: dark ? 'oklch(var(--foreground) / 0.75)' : 'oklch(var(--foreground) / 0.55)', label: 'Remaining' },
               { bg: ac.c, label: 'Today', glow: ac.c },
             ].map(({ bg, label, glow }) => (
               <div key={label} className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full" style={{ background: bg, ...(glow ? { boxShadow: `0 0 6px ${glow}` } : {}) }} />
+                <div className="size-2 rounded-full" style={{ background: bg, ...(glow ? { boxShadow: `0 0 6px ${glow}` } : {}) }} />
                 <span className="text-[10px] text-gray-400 dark:text-gray-600">{label}</span>
               </div>
             ))}

@@ -50,17 +50,17 @@ export function AmbientMode({ t, dark, onClose }: Props) {
       </div>
 
       <div className="relative z-10 text-center select-none">
-        <div className="relative w-44 h-44 mx-auto mb-10">
+        <div className="relative size-44 mx-auto mb-10">
           {RINGS.map((r, i) => (
             <Ring key={r.l} size={r.s} pct={t[r.k]} colors={r.c} label={r.l} idx={i} isActive={r.l === 'Day'} />
           ))}
           <div className="absolute inset-0 flex items-center justify-center">
-            <AnimatedNumber value={t.dP} dec={0} className="text-lg font-mono font-bold text-gray-900 dark:text-white" />
+            <AnimatedNumber value={t.dP} dec={0} className="text-lg font-mono font-semibold text-gray-900 dark:text-white" />
             <span className="text-[10px] text-gray-400">%</span>
           </div>
         </div>
 
-        <p className="fu font-mono tracking-tight tabular-nums leading-none text-gray-900 dark:text-white"
+        <p className="fu font-mono tabular-nums leading-none text-gray-900 dark:text-white"
           style={{ fontSize: 'clamp(4rem,14vw,9rem)', fontWeight: 100, animationDelay: '0.1s' }}>
           {ts}<span className="text-gray-300 dark:text-gray-700" style={{ fontSize: '0.3em', marginLeft: 6 }}>{sc}</span>
         </p>

@@ -21,12 +21,12 @@ function formatDate(dateStr: string): { weekday: string; short: string; isToday:
 
 function ProgressBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="space-y-1">
+    <div className="flex flex-col gap-1">
       <div className="flex justify-between">
-        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>{label}</span>
+        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>{label}</span>
         <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>{value.toFixed(1)}%</span>
       </div>
-      <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 99 }}>
+      <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 99 }}>
         <div style={{ height: '100%', width: `${Math.min(value, 100)}%`, background: color, borderRadius: 99, transition: 'width 1s cubic-bezier(.16,1,.3,1)' }} />
       </div>
     </div>
@@ -83,8 +83,8 @@ function DayEntry({ date, snapshot, habits, milestones, pomoCount, note, onNoteC
         onMouseLeave={e => (e.currentTarget.style.background = 'none')}
       >
         {open
-          ? <ChevronDown size={12} style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
-          : <ChevronRight size={12} style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
+          ? <ChevronDown size={12} aria-hidden="true" style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
+          : <ChevronRight size={12} aria-hidden="true" style={{ color: 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
         }
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">
@@ -100,18 +100,18 @@ function DayEntry({ date, snapshot, habits, milestones, pomoCount, note, onNoteC
             </span>
           )}
           {pomoCount > 0 && (
-            <span style={{ fontSize: 9, color: '#fb923c', background: 'rgba(251,146,60,0.1)', borderRadius: 4, padding: '1px 5px', display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Flame size={8} />{pomoCount}
+            <span style={{ fontSize: 9, color: 'oklch(var(--pomo-focus))', background: 'oklch(var(--pomo-focus) / 0.1)', borderRadius: 4, padding: '1px 5px', display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Flame size={8} aria-hidden="true" />{pomoCount}
             </span>
           )}
           {totalHabits > 0 && (
-            <span style={{ fontSize: 9, color: habitsDone.length === totalHabits ? '#34d399' : 'rgba(255,255,255,0.3)', background: habitsDone.length === totalHabits ? 'rgba(52,211,153,0.1)' : 'rgba(255,255,255,0.05)', borderRadius: 4, padding: '1px 5px' }}>
+            <span style={{ fontSize: 9, color: habitsDone.length === totalHabits ? 'oklch(var(--habit-done))' : 'rgba(255,255,255,0.3)', background: habitsDone.length === totalHabits ? 'oklch(var(--habit-done) / 0.1)' : 'rgba(255,255,255,0.05)', borderRadius: 4, padding: '1px 5px' }}>
               {habitsDone.length}/{totalHabits}
             </span>
           )}
           {localNote.trim() && (
             <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.05)', borderRadius: 4, padding: '1px 5px' }}>
-              <BookOpen size={8} />
+              <BookOpen size={8} aria-hidden="true" />
             </span>
           )}
         </div>
@@ -119,11 +119,11 @@ function DayEntry({ date, snapshot, habits, milestones, pomoCount, note, onNoteC
 
       {/* Expanded content */}
       {open && (
-        <div className="px-4 pb-4 space-y-4" style={{ marginLeft: 24 }}>
+        <div className="px-4 pb-4 flex flex-col gap-4" style={{ marginLeft: 24 }}>
 
           {/* Progress bars */}
           {snapshot ? (
-            <div className="space-y-2 pt-1">
+            <div className="flex flex-col gap-2 pt-1">
               <ProgressBar label="Day" value={snapshot.dP} color="#fb7185" />
               <ProgressBar label="Week" value={snapshot.wP} color="#fbbf24" />
               <ProgressBar label="Month" value={snapshot.mP} color="#34d399" />
@@ -136,13 +136,13 @@ function DayEntry({ date, snapshot, habits, milestones, pomoCount, note, onNoteC
           {/* Pomodoro */}
           {pomoCount > 0 && (
             <div className="flex items-center gap-2">
-              <Flame size={11} className="text-orange-400" style={{ flexShrink: 0 }} />
+              <Flame size={11} aria-hidden="true" style={{ flexShrink: 0, color: 'oklch(var(--pomo-focus))' }} />
               <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
                 {pomoCount} pomodoro session{pomoCount !== 1 ? 's' : ''}
               </span>
               <div className="flex gap-1 ml-1">
                 {Array.from({ length: Math.min(pomoCount, 12) }, (_, i) => (
-                  <div key={i} style={{ width: 6, height: 6, borderRadius: 2, background: '#fb923c', opacity: 0.8 }} />
+                  <div key={i} style={{ width: 6, height: 6, borderRadius: 2, background: 'oklch(var(--pomo-focus))', opacity: 0.8 }} />
                 ))}
                 {pomoCount > 12 && <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>+{pomoCount - 12}</span>}
               </div>
@@ -152,13 +152,13 @@ function DayEntry({ date, snapshot, habits, milestones, pomoCount, note, onNoteC
           {/* Habits */}
           {totalHabits > 0 && (
             <div>
-              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 6 }}>Habits</p>
-              <div className="space-y-1.5">
+              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 500, marginBottom: 6 }}>Habits</p>
+              <div className="flex flex-col gap-1.5">
                 {habits.map(h => {
                   const done = !!h.h[date]
                   return (
                     <div key={h.id} className="flex items-center gap-2">
-                      <div style={{ width: 14, height: 14, borderRadius: 4, background: done ? '#34d399' : 'rgba(255,255,255,0.06)', border: done ? 'none' : '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <div style={{ width: 14, height: 14, borderRadius: 4, background: done ? 'oklch(var(--habit-done))' : 'rgba(255,255,255,0.06)', border: done ? 'none' : '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         {done && <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke="#0c0c0c" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
                       </div>
                       <span style={{ fontSize: 12, color: done ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)', textDecoration: done ? 'none' : 'none' }}>{h.name}</span>
@@ -172,15 +172,15 @@ function DayEntry({ date, snapshot, habits, milestones, pomoCount, note, onNoteC
           {/* Milestones */}
           {milestonesOnDay.length > 0 && (
             <div>
-              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 6 }}>Milestones</p>
-              <div className="space-y-1.5">
+              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 500, marginBottom: 6 }}>Milestones</p>
+              <div className="flex flex-col gap-1.5">
                 {milestonesOnDay.map(m => (
                   <div key={m.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Target size={10} style={{ color: m.past ? 'rgba(255,255,255,0.2)' : '#60a5fa', flexShrink: 0 }} />
+                      <Target size={10} aria-hidden="true" style={{ color: m.past ? 'rgba(255,255,255,0.2)' : 'oklch(var(--milestone))', flexShrink: 0 }} />
                       <span style={{ fontSize: 12, color: m.past ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)' }}>{m.name}</span>
                     </div>
-                    <span style={{ fontSize: 10, fontFamily: 'monospace', color: m.past ? 'rgba(255,255,255,0.2)' : '#60a5fa' }}>
+                    <span style={{ fontSize: 10, fontFamily: 'monospace', color: m.past ? 'rgba(255,255,255,0.2)' : 'oklch(var(--milestone))' }}>
                       {m.past ? `${m.diffDays}d ago` : `in ${m.diffDays}d`}
                     </span>
                   </div>
@@ -191,7 +191,7 @@ function DayEntry({ date, snapshot, habits, milestones, pomoCount, note, onNoteC
 
           {/* Note */}
           <div>
-            <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 6 }}>Note</p>
+            <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 500, marginBottom: 6 }}>Note</p>
             <textarea
               value={localNote}
               onChange={e => handleNote(e.target.value)}
@@ -308,9 +308,9 @@ export function Logbook({ open, onClose, onTodayNoteChange }: Props) {
       }}>
         {/* Header */}
         <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <BookOpen size={14} style={{ color: 'rgba(255,255,255,0.4)' }} />
+          <BookOpen size={14} aria-hidden="true" style={{ color: 'rgba(255,255,255,0.4)' }} />
           <div className="flex-1">
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#fff', letterSpacing: '0.04em' }}>Logbook</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#fff', letterSpacing: '0.04em' }}>Logbook</p>
             <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{days.length} days tracked</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8, color: 'rgba(255,255,255,0.35)' }}
@@ -323,7 +323,7 @@ export function Logbook({ open, onClose, onTodayNoteChange }: Props) {
         {/* Days list */}
         <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.06) transparent' }}>
           {days.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>
+            <div style={{ padding: 32, textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>
               No data yet. Start tracking habits and using the timer.
             </div>
           ) : (

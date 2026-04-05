@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Command, Grid3x3, Zap, Edit3, Flame, BookOpen } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import './index.css'
 
 import { getTP, greet, emph, acc, tip } from '@/lib/time'
@@ -112,8 +114,8 @@ function StatCard({ label, k, color, pct, spark, sub }: { label: string; k: stri
     <div className="rounded-2xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-          <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>{label}</span>
+          <div className="size-1.5 rounded-full" style={{ background: color }} />
+          <span style={{ fontSize: 9, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>{label}</span>
         </div>
         <Sparkline data={spark} color={color} id={k} w={50} h={18} />
       </div>
@@ -157,7 +159,7 @@ function CardLabel({ icon: Icon, label }: { icon?: React.ElementType; label: str
   return (
     <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
       {Icon && <Icon size={11} style={{ color: 'var(--text-3)' }} />}
-      <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>{label}</span>
+      <span style={{ fontSize: 9, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>{label}</span>
     </div>
   )
 }
@@ -303,19 +305,20 @@ export default function App() {
           <div className="flex items-center gap-2">
             {editName ? (
               <form onSubmit={e => { e.preventDefault(); saveName(userName) }}>
-                <input value={userName} onChange={e => setUserName(e.target.value)} placeholder="Your name"
+                <Input value={userName} onChange={e => setUserName(e.target.value)} placeholder="Your name"
                   autoFocus onBlur={() => saveName(userName)}
-                  style={{ background: 'transparent', border: 'none', outline: 'none', color: ac.c, fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', width: 140, fontFamily: 'inherit' }} />
+                  className="bg-transparent border-none outline-none text-xs font-medium uppercase tracking-[0.14em] w-36 h-auto p-0"
+                  style={{ color: ac.c }} />
               </form>
             ) : (
-              <button onClick={() => setEditName(true)} className="flex items-center gap-1.5 group" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                <span style={{ color: ac.c, fontSize: 11, fontWeight: 700, letterSpacing: '0.14em' }}>
+              <Button variant="ghost" onClick={() => setEditName(true)} className="flex items-center gap-1.5 group h-auto p-0">
+                <span style={{ color: ac.c, fontSize: 11, fontWeight: 500, letterSpacing: '0.14em' }}>
                   {greet(hr, userName).toUpperCase()}
                 </span>
-                <Edit3 size={9} style={{ color: ac.c, opacity: 0 }} className="group-hover:opacity-60 transition-opacity" />
-              </button>
+                <Edit3 size={9} aria-hidden="true" style={{ color: ac.c, opacity: 0 }} className="group-hover:opacity-60 transition-opacity" />
+              </Button>
             )}
-            <Zap size={11} style={{ color: ac.c }} />
+            <Zap size={11} aria-hidden="true" style={{ color: ac.c }} />
           </div>
           <div className="flex items-center">
             <IconBtn icon={Command} onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} />
@@ -327,7 +330,7 @@ export default function App() {
         {/* ── Clock ── */}
         <div className="mb-1">
           <div className="flex items-end gap-3 leading-none">
-            <span className="font-mono tabular-nums" style={{ fontSize: 'clamp(4rem,18vw,6.5rem)', fontWeight: 200, letterSpacing: '-0.03em', color: ac.c, lineHeight: 0.9 }}>
+            <span className="font-mono tabular-nums" style={{ fontSize: 'clamp(4rem,18vw,6.5rem)', fontWeight: 200, color: ac.c, lineHeight: 0.9 }}>
               {ts}
             </span>
             <span className="font-mono tabular-nums pb-2" style={{ fontSize: 'clamp(1.2rem,5vw,2rem)', color: 'var(--text-4)', fontWeight: 300 }}>
@@ -344,7 +347,7 @@ export default function App() {
         <Card style={{ padding: 20, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 24 }}>
           <DayArc pct={time.dP} />
           <div className="flex-1">
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: DAY_COLOR, marginBottom: 8 }}>Day Remaining</p>
+            <p style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.14em', color: DAY_COLOR, marginBottom: 8 }}>Day Remaining</p>
             <p style={{ fontSize: 18, fontWeight: 500, color: 'var(--text-2)', marginBottom: 16, lineHeight: 1.3 }}>{tip('Day', time.dP)}</p>
             <div className="flex gap-6">
               <div>
@@ -376,8 +379,8 @@ export default function App() {
 
         {/* ── Focus ── */}
         <Card style={{ padding: '14px 18px', marginBottom: 10, display: 'flex', alignItems: 'center' }}>
-          <Zap size={13} style={{ color: focus ? ac.c : 'var(--text-3)', marginRight: 8 }} />
-          <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>Focus</span>
+          <Zap size={13} aria-hidden="true" style={{ color: focus ? ac.c : 'var(--text-3)', marginRight: 8 }} />
+          <span style={{ fontSize: 9, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>Focus</span>
           <div className="ml-auto">
             <Toggle checked={focus} onChange={() => setFocus(f => !f)} />
           </div>
@@ -419,9 +422,9 @@ export default function App() {
         {/* ── Footer ── */}
         <div className="flex items-center justify-between mt-6">
           <p style={{ fontSize: 10, fontStyle: 'italic', color: 'var(--text-4)' }}>"{QUOTES[quoteIdx]}"</p>
-          <button onClick={() => { setCmdkOpen(true); setCmdkQuery('') }}
-            className="kbd flex-shrink-0 ml-4"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-3)', background: 'none', cursor: 'pointer' }}>⌘K</button>
+          <Button variant="ghost" onClick={() => { setCmdkOpen(true); setCmdkQuery('') }}
+            className="kbd flex-shrink-0 ml-4 h-auto p-0"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-3)' }}>⌘K</Button>
         </div>
       </div>
 
