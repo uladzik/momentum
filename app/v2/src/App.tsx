@@ -46,14 +46,14 @@ function DayArc({ pct }: { pct: number }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { const t = setTimeout(() => setMounted(true), 150); return () => clearTimeout(t) }, [])
 
-  const sz = 160, sw = 6, r = (sz - sw) / 2
+  const sz = 160, sw = 5, r = (sz - sw) / 2
   const fullCi = 2 * Math.PI * r
   const trackLen = (240 / 360) * fullCi
   const gap = fullCi - trackLen
   const offset = trackLen - (Math.min(pct, 100) / 100) * trackLen
 
   return (
-    <div className="relative" style={{ width: sz, height: sz }}>
+    <div className="relative shrink-0" style={{ width: sz, height: sz }}>
       <svg width={sz} height={sz}>
         <defs>
           <linearGradient id="dayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -61,21 +61,23 @@ function DayArc({ pct }: { pct: number }) {
             <stop offset="100%" stopColor="#fb923c" />
           </linearGradient>
         </defs>
+        {/* Track */}
         <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--color-border)" strokeWidth={sw}
-          strokeLinecap="round"
-          strokeDasharray={`${trackLen} ${gap}`}
+          strokeLinecap="round" strokeDasharray={`${trackLen} ${gap}`}
           style={{ transform: 'rotate(150deg)', transformOrigin: 'center' }} />
+        {/* Value */}
         <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="url(#dayGrad)" strokeWidth={sw}
-          strokeLinecap="round"
-          strokeDasharray={`${trackLen} ${gap}`}
+          strokeLinecap="round" strokeDasharray={`${trackLen} ${gap}`}
           strokeDashoffset={mounted ? offset : trackLen}
           style={{ transform: 'rotate(150deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 1.6s cubic-bezier(.16,1,.3,1)' }} />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center" style={{ marginTop: 8 }}>
         <AnimatedNumber value={mounted ? pct : 0} dec={0}
           className="font-mono tabular-nums"
-          style={{ fontSize: 44, lineHeight: 1, fontWeight: 200, background: 'linear-gradient(135deg,#f472b6,#fb923c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
-        <span className="font-mono text-muted-foreground" style={{ fontSize: 18, marginLeft: 2 }}>%</span>
+          style={{ fontSize: 40, lineHeight: 1, fontWeight: 200,
+            background: 'linear-gradient(135deg,#f472b6,#fb923c)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
+        <span className="font-mono text-muted-foreground" style={{ fontSize: 16, marginLeft: 2 }}>%</span>
       </div>
     </div>
   )
@@ -85,13 +87,16 @@ function DayArc({ pct }: { pct: number }) {
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
-    <button onClick={onChange} className={cn(
-      'relative flex-shrink-0 cursor-pointer rounded-full border border-border transition-colors',
-      checked ? 'bg-primary' : 'bg-muted'
-    )} style={{ width: 44, height: 24 }}>
-      <div className={cn(
-        'absolute top-[3px] h-[18px] w-[18px] rounded-full transition-all duration-200',
-        checked ? 'bg-primary-foreground left-[23px]' : 'bg-muted-foreground left-[3px]'
+    <button onClick={onChange} role="switch" aria-checked={checked}
+      className={cn(
+        'relative inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        checked ? 'bg-primary' : 'bg-input'
+      )}
+      style={{ width: 44, height: 24 }}>
+      <span className={cn(
+        'pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform',
+        checked ? 'translate-x-5' : 'translate-x-0'
       )} />
     </button>
   )
@@ -99,24 +104,31 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 
 // ─── Stat Card ───────────────────────────────────────────────────────────────
 
-function StatCard({ label, k, color, pct, spark, sub }: { label: string; k: string; color: string; pct: number; spark: number[]; sub: string }) {
+function StatCard({ label, k, color, pct, spark, sub }: {
+  label: string; k: string; color: string; pct: number; spark: number[]; sub: string
+}) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { const t = setTimeout(() => setMounted(true), 200); return () => clearTimeout(t) }, [])
 
   return (
-    <div className="rounded-xl p-4 bg-card border border-border">
-      <div className="flex items-center justify-between mb-3">
+    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-4 shadow-sm">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-          <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
+          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+          <span className="text-sm font-medium text-muted-foreground">{label}</span>
         </div>
-        <Sparkline data={spark} color={color} id={k} w={50} h={18} />
+        <Sparkline data={spark} color={color} id={k} w={48} h={16} />
       </div>
-      <AnimatedNumber value={mounted ? pct : 0} dec={1} suffix="%" className="font-mono font-semibold tabular-nums" style={{ fontSize: 28, color }} />
-      <div className="h-[2px] rounded-full bg-muted my-2">
-        <div style={{ height: '100%', width: `${mounted ? pct : 0}%`, background: color, borderRadius: 99, transition: 'width 1.4s cubic-bezier(.16,1,.3,1)' }} />
+      <AnimatedNumber value={mounted ? pct : 0} dec={1} suffix="%"
+        className="font-mono font-semibold tabular-nums leading-none"
+        style={{ fontSize: 26, color }} />
+      <div>
+        <div className="h-[2px] rounded-full bg-muted overflow-hidden">
+          <div style={{ height: '100%', width: `${mounted ? pct : 0}%`, background: color, borderRadius: 99,
+            transition: 'width 1.4s cubic-bezier(.16,1,.3,1)' }} />
+        </div>
+        <p className="mt-1.5 text-xs text-muted-foreground font-mono">{sub}</p>
       </div>
-      <p className="text-[10px] font-mono text-muted-foreground">{sub}</p>
     </div>
   )
 }
@@ -125,30 +137,38 @@ function StatCard({ label, k, color, pct, spark, sub }: { label: string; k: stri
 
 function IconBtn({ icon: Icon, onClick, active }: { icon: React.ElementType; onClick: () => void; active?: boolean }) {
   return (
-    <button onClick={onClick} className={cn(
-      'p-1.5 rounded-md cursor-pointer transition-colors text-muted-foreground hover:text-foreground',
-      active ? 'bg-accent text-foreground' : 'hover:bg-accent'
-    )}>
+    <button onClick={onClick}
+      className={cn(
+        'inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors cursor-pointer',
+        'text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        active && 'bg-accent text-foreground'
+      )}>
       <Icon size={16} />
     </button>
   )
 }
 
-// ─── Card ────────────────────────────────────────────────────────────────────
+// ─── Section Card — matches shadcn Card structure exactly ────────────────────
+// Card: rounded-xl border bg-card shadow-sm, flex flex-col gap-6 py-6
+// Content sections: px-6
 
-function Card({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+function SectionCard({ title, icon: Icon, children, className }: {
+  title?: string
+  icon?: React.ElementType
+  children: React.ReactNode
+  className?: string
+}) {
   return (
-    <div className={cn('bg-card border border-border rounded-xl shadow-sm', className)} style={style}>
-      {children}
-    </div>
-  )
-}
-
-function CardLabel({ icon: Icon, label }: { icon?: React.ElementType; label: string }) {
-  return (
-    <div className="flex items-center gap-2 mb-3.5">
-      {Icon && <Icon size={11} className="text-muted-foreground" />}
-      <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
+    <div className={cn('flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-sm', className)}>
+      {title && (
+        <div className="flex items-center gap-2 px-6 pt-6 pb-4">
+          {Icon && <Icon size={16} className="text-muted-foreground shrink-0" />}
+          <h3 className="font-semibold leading-none">{title}</h3>
+        </div>
+      )}
+      <div className={cn('px-6', title ? 'pb-6' : 'py-6')}>
+        {children}
+      </div>
     </div>
   )
 }
@@ -219,9 +239,9 @@ export default function App() {
   const dayOfWeek = ((now.getDay() + 6) % 7) + 1
 
   const subLabels: Record<string, string> = {
-    yP: `Day ${dayOfYear}/${daysInYear}`,
+    yP: `Day ${dayOfYear} of ${daysInYear}`,
     mP: `Day ${dayOfMonth}`,
-    wP: `Day ${dayOfWeek}/7`,
+    wP: `Day ${dayOfWeek} of 7`,
   }
 
   const sparkData = useMemo(() => {
@@ -250,11 +270,11 @@ export default function App() {
   }
 
   const cmdActions = useMemo(() => [
-    { id: 'focus', label: focus ? 'Disable focus' : 'Enable focus', kw: 'focus pomodoro work', icon: Zap, shortcut: 'F', fn: () => setFocus(f => !f) },
+    { id: 'focus',   label: focus ? 'Disable focus' : 'Enable focus', kw: 'focus pomodoro work', icon: Zap, shortcut: 'F', fn: () => setFocus(f => !f) },
     { id: 'ambient', label: 'Ambient mode', kw: 'ambient fullscreen clock zen', shortcut: 'A', fn: () => setAmbient(true) },
-    { id: 'yeardots', label: 'Year in dots', kw: 'year dots calendar', icon: Grid3x3, shortcut: 'Y', fn: () => setYearDots(true) },
+    { id: 'yeardots',label: 'Year in dots', kw: 'year dots calendar', icon: Grid3x3, shortcut: 'Y', fn: () => setYearDots(true) },
     { id: 'logbook', label: 'Open Logbook', kw: 'logbook journal diary history log', icon: BookOpen, shortcut: 'L', fn: () => setLogbookOpen(true) },
-    { id: 'notion', label: showNotion ? 'Hide Notion' : 'Show Notion', kw: 'notion pages', fn: () => setShowNotion(s => !s) },
+    { id: 'notion',  label: showNotion ? 'Hide Notion' : 'Show Notion', kw: 'notion pages', fn: () => setShowNotion(s => !s) },
   ], [dark, focus, showNotion])
 
   useEffect(() => {
@@ -275,141 +295,150 @@ export default function App() {
   const ts = time.now.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', hour12: false })
   const sc = String(time.now.getSeconds()).padStart(2, '0')
   const closeCmdk = useCallback(() => setCmdkOpen(false), [])
-
   const quoteIdx = Math.floor(Date.now() / 8000) % QUOTES.length
 
   return (
     <div className="min-h-svh bg-background text-foreground">
-      {/* Ambient glow */}
-      <div aria-hidden style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        background: `radial-gradient(ellipse 80% 50% at 50% -5%, ${ac.c}18 0%, transparent 65%)` }} />
+      {/* Subtle time-of-day ambient glow */}
+      <div aria-hidden style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
+        background: `radial-gradient(ellipse 80% 45% at 50% -5%, ${ac.c}15 0%, transparent 60%)`
+      }} />
 
-      <div className="relative z-10" style={{ maxWidth: 520, margin: '0 auto', padding: '32px 20px 60px' }}>
+      <div className="relative z-10 mx-auto w-full max-w-[520px] px-4 py-8 pb-16">
 
         {/* ── Header ── */}
-        <div className="flex items-start justify-between mb-6">
+        <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
             {editName ? (
               <form onSubmit={e => { e.preventDefault(); saveName(userName) }}>
-                <input value={userName} onChange={e => setUserName(e.target.value)} placeholder="Your name"
-                  autoFocus onBlur={() => saveName(userName)}
-                  className="bg-transparent border-none outline-none text-[11px] font-semibold uppercase tracking-[0.14em] w-36"
+                <input value={userName} onChange={e => setUserName(e.target.value)}
+                  placeholder="Your name" autoFocus onBlur={() => saveName(userName)}
+                  className="bg-transparent border-none outline-none text-sm font-medium w-36"
                   style={{ color: ac.c }} />
               </form>
             ) : (
-              <button onClick={() => setEditName(true)} className="flex items-center gap-1.5 group bg-transparent border-none p-0 cursor-pointer">
-                <span className="text-[11px] font-semibold tracking-[0.14em] uppercase" style={{ color: ac.c }}>
-                  {greet(hr, userName).toUpperCase()}
+              <button onClick={() => setEditName(true)}
+                className="group flex items-center gap-1.5 bg-transparent border-none p-0 cursor-pointer">
+                <span className="text-sm font-medium" style={{ color: ac.c }}>
+                  {greet(hr, userName)}
                 </span>
-                <Edit3 size={9} className="opacity-0 group-hover:opacity-60 transition-opacity" style={{ color: ac.c }} />
+                <Edit3 size={12} className="opacity-0 group-hover:opacity-50 transition-opacity" style={{ color: ac.c }} />
               </button>
             )}
-            <Zap size={11} style={{ color: ac.c }} />
+            <Zap size={12} style={{ color: ac.c }} />
           </div>
           <div className="flex items-center gap-0.5">
-            <IconBtn icon={Command} onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} />
+            <IconBtn icon={Command}  onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} />
             <IconBtn icon={Grid3x3} onClick={() => setYearDots(true)} />
             <IconBtn icon={BookOpen} onClick={() => setLogbookOpen(true)} />
           </div>
-        </div>
+        </header>
 
         {/* ── Clock ── */}
-        <div className="mb-1">
-          <div className="flex items-end gap-3 leading-none">
-            <span className="font-mono tabular-nums" style={{ fontSize: 'clamp(4rem,18vw,6.5rem)', fontWeight: 200, letterSpacing: '-0.03em', color: ac.c, lineHeight: 0.9 }}>
+        <section className="mb-8">
+          <div className="flex items-end gap-3 leading-none mb-2">
+            <span className="font-mono tabular-nums"
+              style={{ fontSize: 'clamp(3.5rem,16vw,5.5rem)', fontWeight: 200, letterSpacing: '-0.03em', color: ac.c, lineHeight: 0.9 }}>
               {ts}
             </span>
-            <span className="font-mono tabular-nums text-muted-foreground pb-2" style={{ fontSize: 'clamp(1.2rem,5vw,2rem)', fontWeight: 300 }}>
+            <span className="font-mono tabular-nums text-muted-foreground pb-1"
+              style={{ fontSize: 'clamp(1rem,4vw,1.75rem)', fontWeight: 300 }}>
               {sc}
             </span>
           </div>
-        </div>
-        <p className="text-sm text-muted-foreground mb-1">
-          {time.now.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
-        </p>
-        <p className="text-sm text-muted-foreground/70 mb-7">{emph(hr, time)}</p>
+          <p className="text-sm text-muted-foreground">
+            {time.now.toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+          <p className="text-sm text-muted-foreground/60 mt-0.5">{emph(hr, time)}</p>
+        </section>
 
-        {/* ── Day card ── */}
-        <Card className="p-5 mb-2.5 flex items-center gap-6">
-          <DayArc pct={time.dP} />
-          <div className="flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: DAY_COLOR }}>Day Progress</p>
-            <p className="text-base font-medium text-foreground/80 mb-4 leading-snug">{tip('Day', time.dP)}</p>
-            <div className="flex gap-6">
-              <div>
-                <AnimatedNumber value={time.dP} dec={0} suffix="%" className="text-xl font-mono font-semibold text-foreground tabular-nums" />
-                <p className="text-[9px] uppercase tracking-[0.12em] mt-1 text-muted-foreground">Elapsed</p>
-              </div>
-              <div>
-                <AnimatedNumber value={100 - time.dP} dec={0} suffix="%" className="text-xl font-mono font-semibold text-foreground tabular-nums" />
-                <p className="text-[9px] uppercase tracking-[0.12em] mt-1 text-muted-foreground">Left</p>
+        {/* ── Day progress card ── */}
+        <div className="flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-sm mb-3">
+          <div className="flex items-center gap-6 px-6 py-6">
+            <DayArc pct={time.dP} />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium mb-1" style={{ color: DAY_COLOR }}>Day Progress</p>
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{tip('Day', time.dP)}</p>
+              <div className="flex gap-6">
+                <div>
+                  <AnimatedNumber value={time.dP} dec={0} suffix="%"
+                    className="text-xl font-mono font-semibold tabular-nums text-foreground" />
+                  <p className="text-xs text-muted-foreground mt-0.5">Elapsed</p>
+                </div>
+                <div>
+                  <AnimatedNumber value={100 - time.dP} dec={0} suffix="%"
+                    className="text-xl font-mono font-semibold tabular-nums text-foreground" />
+                  <p className="text-xs text-muted-foreground mt-0.5">Remaining</p>
+                </div>
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* ── Year / Month / Week ── */}
-        <div className="grid grid-cols-3 gap-2 mb-2.5">
+        <div className="grid grid-cols-3 gap-3 mb-3">
           {RINGS.map(r => (
-            <StatCard key={r.k} label={r.l} k={r.k} color={r.color} pct={time[r.k] as number} spark={sparkData[r.k] ?? []} sub={subLabels[r.k]} />
+            <StatCard key={r.k} label={r.l} k={r.k} color={r.color}
+              pct={time[r.k] as number} spark={sparkData[r.k] ?? []} sub={subLabels[r.k]} />
           ))}
         </div>
 
         {/* ── Quick note ── */}
-        <Card className="p-4 mb-2.5">
-          <CardLabel icon={Edit3} label="Quick Note" />
+        <SectionCard title="Note" icon={Edit3} className="mb-3">
           <textarea value={note} onChange={e => updateNote(e.target.value)}
             placeholder="What's on your mind today…" rows={3}
-            className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground/80 leading-relaxed placeholder:text-muted-foreground/50" />
-        </Card>
+            className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground/80 leading-relaxed placeholder:text-muted-foreground/40" />
+        </SectionCard>
 
-        {/* ── Focus ── */}
-        <Card className="px-4 py-3 mb-2.5 flex items-center">
-          <Zap size={13} className={focus ? '' : 'text-muted-foreground'} style={focus ? { color: ac.c } : {}} />
-          <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground ml-2">Focus</span>
-          <div className="ml-auto">
-            <Toggle checked={focus} onChange={() => setFocus(f => !f)} />
+        {/* ── Focus toggle ── */}
+        <div className="flex flex-col rounded-xl border border-border bg-card shadow-sm mb-3">
+          <div className="flex items-center px-6 py-4">
+            <Zap size={14} className={focus ? '' : 'text-muted-foreground'} style={focus ? { color: ac.c } : {}} />
+            <span className="ml-2 text-sm font-medium text-foreground">Focus mode</span>
+            <p className="ml-2 text-xs text-muted-foreground hidden sm:block">
+              {focus ? 'Pomodoro timer active' : 'Start a focused session'}
+            </p>
+            <div className="ml-auto">
+              <Toggle checked={focus} onChange={() => setFocus(f => !f)} />
+            </div>
           </div>
-        </Card>
+        </div>
 
         {/* ── Pomodoro ── */}
         {focus && (
-          <Card className="p-4 mb-2.5">
-            <CardLabel label="Pomodoro" />
+          <SectionCard title="Pomodoro" className="mb-3">
             <Pomodoro />
-          </Card>
+          </SectionCard>
         )}
 
         {/* ── Habits ── */}
-        <Card className="p-4 mb-2.5">
-          <CardLabel icon={Flame} label="Habits" />
+        <SectionCard title="Habits" icon={Flame} className="mb-3">
           <Habits initialHabits={syncedHabits} />
-        </Card>
+        </SectionCard>
 
         {/* ── Milestones ── */}
-        <Card className="p-4 mb-2.5">
-          <CardLabel label="Milestones" />
+        <SectionCard title="Milestones" className="mb-3">
           <Milestones initialMilestones={syncedMilestones} />
-        </Card>
+        </SectionCard>
 
         {/* ── Notion ── */}
         {showNotion && (
-          <Card className="p-4 mb-2.5">
-            <CardLabel label="Notion" />
+          <SectionCard title="Notion" className="mb-3">
             <NotionPanel />
-          </Card>
+          </SectionCard>
         )}
 
         {/* ── Footer ── */}
-        <div className="flex items-center justify-between mt-6">
-          <p className="text-[10px] italic text-muted-foreground/60">"{QUOTES[quoteIdx]}"</p>
-          <button onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} className="kbd flex-shrink-0 ml-4 cursor-pointer">⌘K</button>
-        </div>
+        <footer className="flex items-start justify-between mt-8 gap-4">
+          <p className="text-xs italic text-muted-foreground/50 leading-relaxed">"{QUOTES[quoteIdx]}"</p>
+          <button onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} className="kbd shrink-0 cursor-pointer">⌘K</button>
+        </footer>
       </div>
 
       {/* ── Overlays ── */}
-      {ambient && <AmbientMode t={time} dark={dark} onClose={() => setAmbient(false)} />}
-      {yearDots && <YearDots dark={dark} accent={ac} onClose={() => setYearDots(false)} />}
+      {ambient   && <AmbientMode t={time} dark={dark} onClose={() => setAmbient(false)} />}
+      {yearDots  && <YearDots dark={dark} accent={ac} onClose={() => setYearDots(false)} />}
       <Logbook open={logbookOpen} onClose={() => setLogbookOpen(false)} onTodayNoteChange={setNote} />
       <CommandPalette open={cmdkOpen} query={cmdkQuery} setQuery={setCmdkQuery} onClose={closeCmdk} actions={cmdActions} />
     </div>
