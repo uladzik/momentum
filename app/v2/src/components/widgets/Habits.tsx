@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Flame, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { pushHabits, deleteHabitRemote } from '@/lib/sync'
 import type { Habit } from '@/types'
 
 const DEFAULT_HABITS: Habit[] = [
@@ -10,11 +11,16 @@ const DEFAULT_HABITS: Habit[] = [
   { id: 3, name: 'No doomscroll', h: {} },
 ]
 
-export function Habits() {
+interface Props {
+  initialHabits?: Habit[] | null
+}
+
+export function Habits({ initialHabits }: Props) {
   const [habits, setHabits] = useState<Habit[]>(() => {
+    if (initialHabits?.length) return initialHabits
     try {
       const s = JSON.parse(localStorage.getItem('mh') || 'null')
-      return s && s.length ? s : DEFAULT_HABITS
+      return s?.length ? s : DEFAULT_HABITS
     } catch { return DEFAULT_HABITS }
   })
   const [adding, setAdding] = useState(false)
@@ -22,16 +28,26 @@ export function Habits() {
   const [cel, setCel] = useState<{ name: string; streak: number } | null>(null)
   const [pop, setPop] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const syncTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const today = new Date().toISOString().slice(0, 10)
-  const last7 = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - (6 - i))
-      return { k: d.toISOString().slice(0, 10), l: d.toLocaleDateString('en', { weekday: 'narrow' }) }
-    })
-  }, [today])
+  const last7 = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i))
+    return { k: d.toISOString().slice(0, 10), l: d.toLocaleDateString('en', { weekday: 'narrow' }) }
+  }), [today])
 
-  useEffect(() => { localStorage.setItem('mh', JSON.stringify(habits)) }, [habits])
+  // Sync to localStorage + Supabase (debounced)
+  useEffect(() => {
+    localStorage.setItem('mh', JSON.stringify(habits))
+    clearTimeout(syncTimer.current)
+    syncTimer.current = setTimeout(() => { pushHabits(habits).catch(() => {}) }, 1500)
+  }, [habits])
+
+  // Apply initial data from Supabase when it arrives
+  useEffect(() => {
+    if (initialHabits?.length) setHabits(initialHabits)
+  }, [initialHabits])
+
   useEffect(() => { if (adding && inputRef.current) inputRef.current.focus() }, [adding])
   useEffect(() => {
     if (!cel) return
@@ -45,9 +61,7 @@ export function Habits() {
     return s
   }
 
-  function wkCount(hab: Habit) {
-    return last7.filter(d => hab.h[d.k]).length
-  }
+  function wkCount(hab: Habit) { return last7.filter(d => hab.h[d.k]).length }
 
   function toggle(id: number, dk: string) {
     setHabits(prev => prev.map(x => {
@@ -73,6 +87,7 @@ export function Habits() {
 
   function deleteHabit(id: number) {
     setHabits(p => p.filter(x => x.id !== id))
+    deleteHabitRemote(id).catch(() => {})
   }
 
   return (
@@ -84,12 +99,11 @@ export function Habits() {
         </div>
       )}
 
-      {/* Header row */}
       <div className="flex items-center mb-2">
         <div className="flex-1" />
         <div className="flex gap-[3px] mr-6">
           {last7.map(d => (
-            <div key={d.k} className="w-[22px] text-center text-[8px] font-mono font-medium text-gray-400 dark:text-gray-600 uppercase">{d.l}</div>
+            <div key={d.k} className="w-[22px] text-center text-[8px] font-mono font-medium uppercase" style={{ color: 'var(--text-4)' }}>{d.l}</div>
           ))}
         </div>
       </div>
@@ -118,13 +132,14 @@ export function Habits() {
                 const isDone = hab.h[d.k], isToday = d.k === today, isPop = pop === `${hab.id}-${d.k}`
                 return (
                   <button key={d.k} onClick={() => toggle(hab.id, d.k)}
-                    className={`hcell w-[22px] h-[22px] rounded-[6px] flex items-center justify-center text-white transition ${isDone ? 'bg-emerald-500/80' : isToday ? 'bg-black/[0.04] dark:bg-white/[0.06] ring-1 ring-gray-300/30 dark:ring-gray-600/30' : 'bg-black/[0.02] dark:bg-white/[0.03]'}`}>
+                    className={`hcell w-[22px] h-[22px] rounded-[6px] flex items-center justify-center transition ${isDone ? 'bg-emerald-500/80 text-white' : isToday ? 'ring-1 ring-gray-300/30 dark:ring-gray-600/30' : ''}`}
+                    style={{ background: isDone ? undefined : 'var(--track)' }}>
                     {isDone && <span className={isPop ? 'check-pop' : ''}><Check size={9} /></span>}
                   </button>
                 )
               })}
             </div>
-            <button onClick={() => deleteHabit(hab.id)} className="ml-1.5 p-0.5 rounded opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition">
+            <button onClick={() => deleteHabit(hab.id)} className="ml-1.5 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:text-red-400 transition" style={{ color: 'var(--text-3)' }}>
               <Trash2 size={11} />
             </button>
           </div>
@@ -138,7 +153,7 @@ export function Habits() {
           <Button type="button" size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
         </form>
       ) : (
-        <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300 transition pt-2">
+        <button onClick={() => setAdding(true)} className="flex items-center gap-1 text-[10px] transition pt-2" style={{ color: 'var(--text-3)' }}>
           <Plus size={10} /> Add habit
         </button>
       )}

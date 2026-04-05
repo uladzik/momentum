@@ -5,6 +5,8 @@ import './index.css'
 import { getTP, greet, emph, acc, tip } from '@/lib/time'
 import { saveSnapshotLocal, loadHistoryLocal, syncHistoryFromAPI, getSparkData } from '@/lib/history'
 import { getNotes, saveNote } from '@/lib/notes'
+import { initialSync, pushSnapshot, pushNote } from '@/lib/sync'
+import type { Habit, Milestone } from '@/types'
 import { AnimatedNumber } from '@/components/widgets/AnimatedNumber'
 import { Sparkline } from '@/components/widgets/Sparkline'
 import { Pomodoro } from '@/components/widgets/Pomodoro'
@@ -171,6 +173,8 @@ export default function App() {
   const [editName, setEditName] = useState(false)
   const [logbookOpen, setLogbookOpen] = useState(false)
   const [showNotion, setShowNotion] = useState(false)
+  const [syncedHabits, setSyncedHabits] = useState<Habit[] | null>(null)
+  const [syncedMilestones, setSyncedMilestones] = useState<Milestone[] | null>(null)
 
   const today = new Date().toISOString().slice(0, 10)
   const [note, setNote] = useState(() => getNotes()[today] ?? '')
@@ -185,8 +189,30 @@ export default function App() {
   }, [dark])
 
   useEffect(() => {
-    syncHistoryFromAPI().then(merged => setHistory(merged)).catch(() => {})
-    function doSnap() { const d = saveSnapshotLocal(time); setHistory(d) }
+    // Pull from Supabase on mount
+    initialSync().then(({ history: h, habits, milestones }) => {
+      if (Object.keys(h).length) {
+        const local = loadHistoryLocal()
+        const merged = { ...local, ...h }
+        localStorage.setItem('m_history', JSON.stringify(merged))
+        setHistory(merged)
+      }
+      if (habits?.length) setSyncedHabits(habits)
+      if (milestones?.length) setSyncedMilestones(milestones)
+      // Also update note from Supabase
+      const remoteNote = getNotes()[today]
+      if (remoteNote) setNote(remoteNote)
+    }).catch(() => {
+      syncHistoryFromAPI().then(merged => setHistory(merged)).catch(() => {})
+    })
+
+    // Save snapshot every 5 min
+    function doSnap() {
+      const t = getTP()
+      const d = saveSnapshotLocal(t)
+      setHistory(d)
+      pushSnapshot(today, { yP: t.yP, mP: t.mP, wP: t.wP, dP: t.dP }).catch(() => {})
+    }
     doSnap()
     const id = setInterval(doSnap, 300000)
     return () => clearInterval(id)
@@ -223,7 +249,10 @@ export default function App() {
 
   function updateNote(v: string) {
     setNote(v); clearTimeout(noteTimer.current)
-    noteTimer.current = setTimeout(() => saveNote(today, v), 500)
+    noteTimer.current = setTimeout(() => {
+      saveNote(today, v)
+      pushNote(today, v).catch(() => {})
+    }, 500)
   }
 
   function saveName(n: string) {
@@ -362,13 +391,13 @@ export default function App() {
         {/* ── Habits ── */}
         <Card style={{ padding: 18, marginBottom: 10 }}>
           <CardLabel icon={Flame} label="Habits" />
-          <Habits />
+          <Habits initialHabits={syncedHabits} />
         </Card>
 
         {/* ── Milestones ── */}
         <Card style={{ padding: 18, marginBottom: 10 }}>
           <CardLabel label="Milestones" />
-          <Milestones />
+          <Milestones initialMilestones={syncedMilestones} />
         </Card>
 
         {/* ── Notion ── */}
