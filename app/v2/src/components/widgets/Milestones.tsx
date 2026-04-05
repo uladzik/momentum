@@ -18,25 +18,25 @@ function MilestoneCard({ m, onDelete }: { m: Milestone; onDelete: (id: number) =
   const prog = past ? 100 : Math.max(0, Math.min(100, ((m.td - days) / m.td) * 100))
 
   return (
-    <div className="si rounded-2xl p-4 group" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)' }}>
+    <div className="si rounded-xl p-4 group bg-muted/50 border border-border">
       <div className="flex items-center justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{m.name}</p>
-          <p className="text-[10px] font-mono mt-0.5" style={{ color: 'var(--text-4)' }}>
+          <p className="text-[13px] font-semibold truncate text-foreground">{m.name}</p>
+          <p className="text-[10px] font-mono mt-0.5 text-muted-foreground">
             {target.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-xl font-mono font-bold tabular-nums" style={{ color: past ? 'var(--text-4)' : 'var(--text)' }}>
-            {past ? '-' : ''}{days}<span className="text-[9px] font-normal ml-0.5" style={{ color: 'var(--text-4)' }}>d</span>
+          <span className={`text-xl font-mono font-bold tabular-nums ${past ? 'text-muted-foreground' : 'text-foreground'}`}>
+            {past ? '-' : ''}{days}<span className="text-[9px] font-normal ml-0.5 text-muted-foreground">d</span>
           </span>
-          <button onClick={() => onDelete(m.id)} className="p-1 rounded opacity-0 group-hover:opacity-100 hover:text-red-400 transition" style={{ color: 'var(--text-3)' }}>
+          <button onClick={() => onDelete(m.id)} className="p-1 rounded opacity-0 group-hover:opacity-100 hover:text-destructive transition-colors text-muted-foreground cursor-pointer">
             <Trash2 size={11} />
           </button>
         </div>
       </div>
       {!past && (
-        <div className="h-[3px] rounded-full mt-3 overflow-hidden" style={{ background: 'var(--track)' }}>
+        <div className="h-[3px] rounded-full mt-3 overflow-hidden bg-border">
           <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${prog}%`, background: 'linear-gradient(90deg,#34d399,#60a5fa)' }} />
         </div>
       )}
@@ -56,7 +56,7 @@ function AddForm({ onAdd, onClose }: { onAdd: (m: Milestone) => void; onClose: (
   }
   return (
     <form onSubmit={submit} className="p-5 space-y-3">
-      <p className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>New milestone</p>
+      <p className="text-sm font-semibold mb-4 text-foreground">New milestone</p>
       <Input placeholder="Counting down to…" value={name} onChange={e => setName(e.target.value)} autoFocus />
       <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
       <div className="flex gap-2 pt-1">
@@ -103,10 +103,7 @@ export function Milestones({ initialMilestones }: Props) {
       <div className="space-y-2">
         {milestones.map(m => <MilestoneCard key={m.id} m={m} onDelete={remove} />)}
         <button onClick={() => setShowForm(true)}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed transition text-xs"
-          style={{ borderColor: 'var(--border)', color: 'var(--text-3)' }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border-focus)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors text-xs cursor-pointer">
           <Plus size={12} /><Target size={12} /> Add milestone
         </button>
       </div>

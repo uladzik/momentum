@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Command, Grid3x3, Zap, Edit3, Flame, BookOpen } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import './index.css'
 
 import { getTP, greet, emph, acc, tip } from '@/lib/time'
@@ -17,7 +18,6 @@ import { YearDots } from '@/components/widgets/YearDots'
 import { AmbientMode } from '@/components/widgets/AmbientMode'
 import { CommandPalette } from '@/components/widgets/CommandPalette'
 import { Logbook } from '@/components/widgets/Logbook'
-import { Dashboard } from '@/components/widgets/Dashboard'
 import type { TimeProgress } from '@/types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -40,21 +40,20 @@ const QUOTES = [
   "Discipline is choosing what you want most over what you want now.",
 ]
 
-// ─── Day Arc — uses stroke-dashoffset for smooth animation ───────────────────
+// ─── Day Arc ─────────────────────────────────────────────────────────────────
 
 function DayArc({ pct }: { pct: number }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { const t = setTimeout(() => setMounted(true), 150); return () => clearTimeout(t) }, [])
 
-  const sz = 160, sw = 6, r = (sz - sw) / 2
-  // Full circle circumference, but we only use 240/360 of it
+  const sz = 160, sw = 5, r = (sz - sw) / 2
   const fullCi = 2 * Math.PI * r
-  const trackLen = (240 / 360) * fullCi          // visible arc length
-  const gap = fullCi - trackLen                   // invisible portion
-  const offset = trackLen - (Math.min(pct, 100) / 100) * trackLen  // how much to hide
+  const trackLen = (240 / 360) * fullCi
+  const gap = fullCi - trackLen
+  const offset = trackLen - (Math.min(pct, 100) / 100) * trackLen
 
   return (
-    <div className="relative" style={{ width: sz, height: sz }}>
+    <div className="relative shrink-0" style={{ width: sz, height: sz }}>
       <svg width={sz} height={sz}>
         <defs>
           <linearGradient id="dayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -63,22 +62,22 @@ function DayArc({ pct }: { pct: number }) {
           </linearGradient>
         </defs>
         {/* Track */}
-        <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--track)" strokeWidth={sw}
-          strokeLinecap="round"
-          strokeDasharray={`${trackLen} ${gap}`}
+        <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="var(--color-border)" strokeWidth={sw}
+          strokeLinecap="round" strokeDasharray={`${trackLen} ${gap}`}
           style={{ transform: 'rotate(150deg)', transformOrigin: 'center' }} />
-        {/* Value — animates via dashoffset */}
+        {/* Value */}
         <circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke="url(#dayGrad)" strokeWidth={sw}
-          strokeLinecap="round"
-          strokeDasharray={`${trackLen} ${gap}`}
+          strokeLinecap="round" strokeDasharray={`${trackLen} ${gap}`}
           strokeDashoffset={mounted ? offset : trackLen}
           style={{ transform: 'rotate(150deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 1.6s cubic-bezier(.16,1,.3,1)' }} />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center" style={{ marginTop: 8 }}>
         <AnimatedNumber value={mounted ? pct : 0} dec={0}
           className="font-mono tabular-nums"
-          style={{ fontSize: 44, lineHeight: 1, fontWeight: 200, background: 'linear-gradient(135deg,#f472b6,#fb923c)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
-        <span className="font-mono" style={{ fontSize: 18, color: 'var(--text-3)', marginLeft: 2 }}>%</span>
+          style={{ fontSize: 40, lineHeight: 1, fontWeight: 200,
+            background: 'linear-gradient(135deg,#f472b6,#fb923c)',
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} />
+        <span className="font-mono text-muted-foreground" style={{ fontSize: 16, marginLeft: 2 }}>%</span>
       </div>
     </div>
   )
@@ -88,40 +87,48 @@ function DayArc({ pct }: { pct: number }) {
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
-    <button onClick={onChange} style={{
-      position: 'relative', width: 44, height: 24, borderRadius: 12, flexShrink: 0,
-      background: checked ? 'var(--text)' : 'var(--track)',
-      border: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.2s',
-    }}>
-      <div style={{
-        position: 'absolute', top: 2, width: 18, height: 18, borderRadius: 9,
-        background: checked ? 'var(--bg)' : 'var(--text-3)',
-        left: checked ? 22 : 3, transition: 'left 0.25s cubic-bezier(.16,1,.3,1), background 0.2s',
-      }} />
+    <button onClick={onChange} role="switch" aria-checked={checked}
+      className={cn(
+        'relative inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        checked ? 'bg-primary' : 'bg-input'
+      )}
+      style={{ width: 44, height: 24 }}>
+      <span className={cn(
+        'pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform',
+        checked ? 'translate-x-5' : 'translate-x-0'
+      )} />
     </button>
   )
 }
 
 // ─── Stat Card ───────────────────────────────────────────────────────────────
 
-function StatCard({ label, k, color, pct, spark, sub }: { label: string; k: string; color: string; pct: number; spark: number[]; sub: string }) {
+function StatCard({ label, k, color, pct, spark, sub }: {
+  label: string; k: string; color: string; pct: number; spark: number[]; sub: string
+}) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { const t = setTimeout(() => setMounted(true), 200); return () => clearTimeout(t) }, [])
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
-      <div className="flex items-center justify-between mb-3">
+    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-4 shadow-sm">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-          <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>{label}</span>
+          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+          <span className="text-sm font-medium text-muted-foreground">{label}</span>
         </div>
-        <Sparkline data={spark} color={color} id={k} w={50} h={18} />
+        <Sparkline data={spark} color={color} id={k} w={48} h={16} />
       </div>
-      <AnimatedNumber value={mounted ? pct : 0} dec={1} suffix="%" className="font-mono font-semibold tabular-nums" style={{ fontSize: 28, color }} />
-      <div style={{ height: 2, background: 'var(--track)', borderRadius: 99, margin: '8px 0 6px' }}>
-        <div style={{ height: '100%', width: `${mounted ? pct : 0}%`, background: color, borderRadius: 99, transition: 'width 1.4s cubic-bezier(.16,1,.3,1)' }} />
+      <AnimatedNumber value={mounted ? pct : 0} dec={1} suffix="%"
+        className="font-mono font-semibold tabular-nums leading-none"
+        style={{ fontSize: 26, color }} />
+      <div>
+        <div className="h-[2px] rounded-full bg-muted overflow-hidden">
+          <div style={{ height: '100%', width: `${mounted ? pct : 0}%`, background: color, borderRadius: 99,
+            transition: 'width 1.4s cubic-bezier(.16,1,.3,1)' }} />
+        </div>
+        <p className="mt-1.5 text-xs text-muted-foreground font-mono">{sub}</p>
       </div>
-      <p style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--text-4)' }}>{sub}</p>
     </div>
   )
 }
@@ -130,34 +137,38 @@ function StatCard({ label, k, color, pct, spark, sub }: { label: string; k: stri
 
 function IconBtn({ icon: Icon, onClick, active }: { icon: React.ElementType; onClick: () => void; active?: boolean }) {
   return (
-    <button onClick={onClick} style={{
-      background: active ? 'var(--track)' : 'none',
-      border: 'none', padding: '6px 8px', cursor: 'pointer',
-      color: active ? 'var(--text)' : 'var(--icon)',
-      borderRadius: 8, transition: 'color .15s, background .15s',
-    }}
-      onMouseEnter={e => (e.currentTarget.style.color = 'var(--icon-hover)')}
-      onMouseLeave={e => (e.currentTarget.style.color = active ? 'var(--text)' : 'var(--icon)')}>
+    <button onClick={onClick}
+      className={cn(
+        'inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors cursor-pointer',
+        'text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        active && 'bg-accent text-foreground'
+      )}>
       <Icon size={16} />
     </button>
   )
 }
 
-// ─── Card ────────────────────────────────────────────────────────────────────
+// ─── Section Card — matches shadcn Card structure exactly ────────────────────
+// Card: rounded-xl border bg-card shadow-sm, flex flex-col gap-6 py-6
+// Content sections: px-6
 
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function SectionCard({ title, icon: Icon, children, className }: {
+  title?: string
+  icon?: React.ElementType
+  children: React.ReactNode
+  className?: string
+}) {
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, boxShadow: 'var(--shadow-card)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', ...style }}>
-      {children}
-    </div>
-  )
-}
-
-function CardLabel({ icon: Icon, label }: { icon?: React.ElementType; label: string }) {
-  return (
-    <div className="flex items-center gap-2" style={{ marginBottom: 14 }}>
-      {Icon && <Icon size={11} style={{ color: 'var(--text-3)' }} />}
-      <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>{label}</span>
+    <div className={cn('flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-sm', className)}>
+      {title && (
+        <div className="flex items-center gap-2 px-6 pt-6 pb-4">
+          {Icon && <Icon size={16} className="text-muted-foreground shrink-0" />}
+          <h3 className="font-semibold leading-none">{title}</h3>
+        </div>
+      )}
+      <div className={cn('px-6', title ? 'pb-6' : 'py-6')}>
+        {children}
+      </div>
     </div>
   )
 }
@@ -165,7 +176,7 @@ function CardLabel({ icon: Icon, label }: { icon?: React.ElementType; label: str
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [dark] = useState(true) // light theme disabled until fully implemented
+  const [dark] = useState(true)
   const [time, setTime] = useState<TimeProgress>(getTP)
   const [focus, setFocus] = useState(false)
   const [ambient, setAmbient] = useState(false)
@@ -188,11 +199,9 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
-    document.documentElement.classList.toggle('light', !dark)
   }, [dark])
 
   useEffect(() => {
-    // Pull from Supabase on mount
     initialSync().then(({ history: h, habits, milestones }) => {
       if (Object.keys(h).length) {
         const local = loadHistoryLocal()
@@ -202,14 +211,12 @@ export default function App() {
       }
       if (habits?.length) setSyncedHabits(habits)
       if (milestones?.length) setSyncedMilestones(milestones)
-      // Also update note from Supabase
       const remoteNote = getNotes()[today]
       if (remoteNote) setNote(remoteNote)
     }).catch(() => {
       syncHistoryFromAPI().then(merged => setHistory(merged)).catch(() => {})
     })
 
-    // Save snapshot every 5 min
     function doSnap() {
       const t = getTP()
       const d = saveSnapshotLocal(t)
@@ -232,9 +239,9 @@ export default function App() {
   const dayOfWeek = ((now.getDay() + 6) % 7) + 1
 
   const subLabels: Record<string, string> = {
-    yP: `Day ${dayOfYear}/${daysInYear}`,
+    yP: `Day ${dayOfYear} of ${daysInYear}`,
     mP: `Day ${dayOfMonth}`,
-    wP: `Day ${dayOfWeek}/7`,
+    wP: `Day ${dayOfWeek} of 7`,
   }
 
   const sparkData = useMemo(() => {
@@ -263,11 +270,11 @@ export default function App() {
   }
 
   const cmdActions = useMemo(() => [
-    { id: 'focus', label: focus ? 'Disable focus' : 'Enable focus', kw: 'focus pomodoro work', icon: Zap, shortcut: 'F', fn: () => setFocus(f => !f) },
+    { id: 'focus',   label: focus ? 'Disable focus' : 'Enable focus', kw: 'focus pomodoro work', icon: Zap, shortcut: 'F', fn: () => setFocus(f => !f) },
     { id: 'ambient', label: 'Ambient mode', kw: 'ambient fullscreen clock zen', shortcut: 'A', fn: () => setAmbient(true) },
-    { id: 'yeardots', label: 'Year in dots', kw: 'year dots calendar', icon: Grid3x3, shortcut: 'Y', fn: () => setYearDots(true) },
+    { id: 'yeardots',label: 'Year in dots', kw: 'year dots calendar', icon: Grid3x3, shortcut: 'Y', fn: () => setYearDots(true) },
     { id: 'logbook', label: 'Open Logbook', kw: 'logbook journal diary history log', icon: BookOpen, shortcut: 'L', fn: () => setLogbookOpen(true) },
-    { id: 'notion', label: showNotion ? 'Hide Notion' : 'Show Notion', kw: 'notion pages', fn: () => setShowNotion(s => !s) },
+    { id: 'notion',  label: showNotion ? 'Hide Notion' : 'Show Notion', kw: 'notion pages', fn: () => setShowNotion(s => !s) },
   ], [dark, focus, showNotion])
 
   useEffect(() => {
@@ -288,146 +295,150 @@ export default function App() {
   const ts = time.now.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', hour12: false })
   const sc = String(time.now.getSeconds()).padStart(2, '0')
   const closeCmdk = useCallback(() => setCmdkOpen(false), [])
-
   const quoteIdx = Math.floor(Date.now() / 8000) % QUOTES.length
 
   return (
-    <div style={{ minHeight: '100svh', background: 'var(--bg)', color: 'var(--text)', transition: 'background 0.3s, color 0.3s', position: 'relative', overflow: 'hidden' }}>
-      {/* Ambient glow */}
-      <div aria-hidden style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        background: `radial-gradient(ellipse 80% 60% at 50% -10%, ${ac.c}14 0%, transparent 70%)` }} />
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: '32px 20px 60px', position: 'relative', zIndex: 1 }}>
+    <div className="min-h-svh bg-background text-foreground">
+      {/* Subtle time-of-day ambient glow */}
+      <div aria-hidden style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
+        background: `radial-gradient(ellipse 80% 45% at 50% -5%, ${ac.c}15 0%, transparent 60%)`
+      }} />
+
+      <div className="relative z-10 mx-auto w-full max-w-[520px] px-4 py-8 pb-16">
 
         {/* ── Header ── */}
-        <div className="flex items-start justify-between mb-6">
+        <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
             {editName ? (
               <form onSubmit={e => { e.preventDefault(); saveName(userName) }}>
-                <input value={userName} onChange={e => setUserName(e.target.value)} placeholder="Your name"
-                  autoFocus onBlur={() => saveName(userName)}
-                  style={{ background: 'transparent', border: 'none', outline: 'none', color: ac.c, fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', width: 140, fontFamily: 'inherit' }} />
+                <input value={userName} onChange={e => setUserName(e.target.value)}
+                  placeholder="Your name" autoFocus onBlur={() => saveName(userName)}
+                  className="bg-transparent border-none outline-none text-sm font-medium w-36"
+                  style={{ color: ac.c }} />
               </form>
             ) : (
-              <button onClick={() => setEditName(true)} className="flex items-center gap-1.5 group" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                <span style={{ color: ac.c, fontSize: 11, fontWeight: 700, letterSpacing: '0.14em' }}>
-                  {greet(hr, userName).toUpperCase()}
+              <button onClick={() => setEditName(true)}
+                className="group flex items-center gap-1.5 bg-transparent border-none p-0 cursor-pointer">
+                <span className="text-sm font-medium" style={{ color: ac.c }}>
+                  {greet(hr, userName)}
                 </span>
-                <Edit3 size={9} style={{ color: ac.c, opacity: 0 }} className="group-hover:opacity-60 transition-opacity" />
+                <Edit3 size={12} className="opacity-0 group-hover:opacity-50 transition-opacity" style={{ color: ac.c }} />
               </button>
             )}
-            <Zap size={11} style={{ color: ac.c }} />
+            <Zap size={12} style={{ color: ac.c }} />
           </div>
-          <div className="flex items-center">
-            <IconBtn icon={Command} onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} />
+          <div className="flex items-center gap-0.5">
+            <IconBtn icon={Command}  onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} />
             <IconBtn icon={Grid3x3} onClick={() => setYearDots(true)} />
             <IconBtn icon={BookOpen} onClick={() => setLogbookOpen(true)} />
           </div>
-        </div>
+        </header>
 
         {/* ── Clock ── */}
-        <div className="mb-1">
-          <div className="flex items-end gap-3 leading-none">
-            <span className="font-mono tabular-nums" style={{ fontSize: 'clamp(4rem,18vw,6.5rem)', fontWeight: 200, letterSpacing: '-0.03em', color: ac.c, lineHeight: 0.9 }}>
+        <section className="mb-8">
+          <div className="flex items-end gap-3 leading-none mb-2">
+            <span className="font-mono tabular-nums"
+              style={{ fontSize: 'clamp(3.5rem,16vw,5.5rem)', fontWeight: 200, letterSpacing: '-0.03em', color: ac.c, lineHeight: 0.9 }}>
               {ts}
             </span>
-            <span className="font-mono tabular-nums pb-2" style={{ fontSize: 'clamp(1.2rem,5vw,2rem)', color: 'var(--text-4)', fontWeight: 300 }}>
+            <span className="font-mono tabular-nums text-muted-foreground pb-1"
+              style={{ fontSize: 'clamp(1rem,4vw,1.75rem)', fontWeight: 300 }}>
               {sc}
             </span>
           </div>
-        </div>
-        <p style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 4 }}>
-          {time.now.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
-        </p>
-        <p style={{ color: 'var(--text-4)', fontSize: 13, marginBottom: 28 }}>{emph(hr, time)}</p>
+          <p className="text-sm text-muted-foreground">
+            {time.now.toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+          <p className="text-sm text-muted-foreground/60 mt-0.5">{emph(hr, time)}</p>
+        </section>
 
-        {/* ── Day card ── */}
-        <Card style={{ padding: 20, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 24 }}>
-          <DayArc pct={time.dP} />
-          <div className="flex-1">
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: DAY_COLOR, marginBottom: 8 }}>Day Remaining</p>
-            <p style={{ fontSize: 18, fontWeight: 500, color: 'var(--text-2)', marginBottom: 16, lineHeight: 1.3 }}>{tip('Day', time.dP)}</p>
-            <div className="flex gap-6">
-              <div>
-                <AnimatedNumber value={time.dP} dec={0} suffix="%" style={{ fontSize: 22, fontFamily: 'monospace', fontWeight: 600, color: 'var(--text)' }} />
-                <p style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 2, color: 'var(--text-4)' }}>Elapsed</p>
-              </div>
-              <div>
-                <AnimatedNumber value={100 - time.dP} dec={0} suffix="%" style={{ fontSize: 22, fontFamily: 'monospace', fontWeight: 600, color: 'var(--text)' }} />
-                <p style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 2, color: 'var(--text-4)' }}>Left</p>
+        {/* ── Day progress card ── */}
+        <div className="flex flex-col rounded-xl border border-border bg-card text-card-foreground shadow-sm mb-3">
+          <div className="flex items-center gap-6 px-6 py-6">
+            <DayArc pct={time.dP} />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium mb-1" style={{ color: DAY_COLOR }}>Day Progress</p>
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{tip('Day', time.dP)}</p>
+              <div className="flex gap-6">
+                <div>
+                  <AnimatedNumber value={time.dP} dec={0} suffix="%"
+                    className="text-xl font-mono font-semibold tabular-nums text-foreground" />
+                  <p className="text-xs text-muted-foreground mt-0.5">Elapsed</p>
+                </div>
+                <div>
+                  <AnimatedNumber value={100 - time.dP} dec={0} suffix="%"
+                    className="text-xl font-mono font-semibold tabular-nums text-foreground" />
+                  <p className="text-xs text-muted-foreground mt-0.5">Remaining</p>
+                </div>
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* ── Year / Month / Week ── */}
-        <div className="grid grid-cols-3 gap-2 mb-2.5">
+        <div className="grid grid-cols-3 gap-3 mb-3">
           {RINGS.map(r => (
-            <StatCard key={r.k} label={r.l} k={r.k} color={r.color} pct={time[r.k] as number} spark={sparkData[r.k] ?? []} sub={subLabels[r.k]} />
+            <StatCard key={r.k} label={r.l} k={r.k} color={r.color}
+              pct={time[r.k] as number} spark={sparkData[r.k] ?? []} sub={subLabels[r.k]} />
           ))}
         </div>
 
         {/* ── Quick note ── */}
-        <Card style={{ padding: 18, marginBottom: 10 }}>
-          <CardLabel icon={Edit3} label="Quick Note" />
+        <SectionCard title="Note" icon={Edit3} className="mb-3">
           <textarea value={note} onChange={e => updateNote(e.target.value)}
             placeholder="What's on your mind today…" rows={3}
-            style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: 'var(--text-2)', fontSize: 14, lineHeight: 1.6, fontFamily: 'inherit' }} />
-        </Card>
+            className="w-full bg-transparent border-none outline-none resize-none text-sm text-foreground/80 leading-relaxed placeholder:text-muted-foreground/40" />
+        </SectionCard>
 
-        {/* ── Focus ── */}
-        <Card style={{ padding: '14px 18px', marginBottom: 10, display: 'flex', alignItems: 'center' }}>
-          <Zap size={13} style={{ color: focus ? ac.c : 'var(--text-3)', marginRight: 8 }} />
-          <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--text-3)' }}>Focus</span>
-          <div className="ml-auto">
-            <Toggle checked={focus} onChange={() => setFocus(f => !f)} />
+        {/* ── Focus toggle ── */}
+        <div className="flex flex-col rounded-xl border border-border bg-card shadow-sm mb-3">
+          <div className="flex items-center px-6 py-4">
+            <Zap size={14} className={focus ? '' : 'text-muted-foreground'} style={focus ? { color: ac.c } : {}} />
+            <span className="ml-2 text-sm font-medium text-foreground">Focus mode</span>
+            <p className="ml-2 text-xs text-muted-foreground hidden sm:block">
+              {focus ? 'Pomodoro timer active' : 'Start a focused session'}
+            </p>
+            <div className="ml-auto">
+              <Toggle checked={focus} onChange={() => setFocus(f => !f)} />
+            </div>
           </div>
-        </Card>
+        </div>
 
-        {/* ── Pomodoro (focus on) ── */}
+        {/* ── Pomodoro ── */}
         {focus && (
-          <Card style={{ padding: 18, marginBottom: 10 }} >
-            <CardLabel label="Pomodoro" />
+          <SectionCard title="Pomodoro" className="mb-3">
             <Pomodoro />
-          </Card>
+          </SectionCard>
         )}
 
         {/* ── Habits ── */}
-        <Card style={{ padding: 18, marginBottom: 10 }}>
-          <CardLabel icon={Flame} label="Habits" />
+        <SectionCard title="Habits" icon={Flame} className="mb-3">
           <Habits initialHabits={syncedHabits} />
-        </Card>
+        </SectionCard>
 
         {/* ── Milestones ── */}
-        <Card style={{ padding: 18, marginBottom: 10 }}>
-          <CardLabel label="Milestones" />
+        <SectionCard title="Milestones" className="mb-3">
           <Milestones initialMilestones={syncedMilestones} />
-        </Card>
-
-        {/* ── Dashboard ── */}
-        <div className="mb-2.5">
-          <Dashboard />
-        </div>
+        </SectionCard>
 
         {/* ── Notion ── */}
         {showNotion && (
-          <Card style={{ padding: 18, marginBottom: 10 }}>
-            <CardLabel label="Notion" />
+          <SectionCard title="Notion" className="mb-3">
             <NotionPanel />
-          </Card>
+          </SectionCard>
         )}
 
         {/* ── Footer ── */}
-        <div className="flex items-center justify-between mt-6">
-          <p style={{ fontSize: 10, fontStyle: 'italic', color: 'var(--text-4)' }}>"{QUOTES[quoteIdx]}"</p>
-          <button onClick={() => { setCmdkOpen(true); setCmdkQuery('') }}
-            className="kbd flex-shrink-0 ml-4"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-3)', background: 'none', cursor: 'pointer' }}>⌘K</button>
-        </div>
+        <footer className="flex items-start justify-between mt-8 gap-4">
+          <p className="text-xs italic text-muted-foreground/50 leading-relaxed">"{QUOTES[quoteIdx]}"</p>
+          <button onClick={() => { setCmdkOpen(true); setCmdkQuery('') }} className="kbd shrink-0 cursor-pointer">⌘K</button>
+        </footer>
       </div>
 
       {/* ── Overlays ── */}
-      {ambient && <AmbientMode t={time} dark={dark} onClose={() => setAmbient(false)} />}
-      {yearDots && <YearDots dark={dark} accent={ac} onClose={() => setYearDots(false)} />}
+      {ambient   && <AmbientMode t={time} dark={dark} onClose={() => setAmbient(false)} />}
+      {yearDots  && <YearDots dark={dark} accent={ac} onClose={() => setYearDots(false)} />}
       <Logbook open={logbookOpen} onClose={() => setLogbookOpen(false)} onTodayNoteChange={setNote} />
       <CommandPalette open={cmdkOpen} query={cmdkQuery} setQuery={setCmdkQuery} onClose={closeCmdk} actions={cmdActions} />
     </div>

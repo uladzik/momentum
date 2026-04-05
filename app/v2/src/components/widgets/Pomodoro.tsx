@@ -22,10 +22,6 @@ function incrementTodayPomo(): number {
   const today = new Date().toISOString().slice(0, 10)
   try {
     const log: Record<string, number> = JSON.parse(localStorage.getItem('m_pomo_log') || '{}')
-    // Migrate old total counter to today if first time
-    if (!log[today] && localStorage.getItem('mp')) {
-      // don't migrate total — old mp was cumulative, not per-day
-    }
     log[today] = (log[today] ?? 0) + 1
     localStorage.setItem('m_pomo_log', JSON.stringify(log))
     return log[today]
@@ -73,13 +69,13 @@ export function Pomodoro() {
     <div className="flex items-center gap-4">
       <div className={`relative ${running && !isBreak ? 'pomo-go' : ''}`}>
         <svg width={70} height={70}>
-          <circle cx={35} cy={35} r={rad} fill="none" stroke="var(--track)" strokeWidth={3} />
+          <circle cx={35} cy={35} r={rad} fill="none" stroke="var(--color-border)" strokeWidth={3} />
           <circle cx={35} cy={35} r={rad} fill="none" stroke={col} strokeWidth={3} strokeLinecap="round"
             strokeDasharray={ci} strokeDashoffset={doff}
             style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 1s linear' }} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-mono font-bold tabular-nums" style={{ color: 'var(--text)' }}>
+          <span className="text-sm font-mono font-bold tabular-nums text-foreground">
             {String(mn).padStart(2, '0')}:{String(sc).padStart(2, '0')}
           </span>
           <span className="text-[7px] uppercase tracking-[0.15em] font-semibold mt-0.5" style={{ color: col }}>
@@ -97,7 +93,7 @@ export function Pomodoro() {
             <RotateCcw size={11} />
           </Button>
         </div>
-        <div className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-3)' }}>
+        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
           <Flame size={10} className="text-orange-400" />
           <span className="font-mono font-semibold">{todaySessions} today</span>
         </div>
