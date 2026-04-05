@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Play, Pause, RotateCcw, Flame } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { playChime } from '@/lib/time'
 
 const WORK = 25 * 60
@@ -22,7 +23,6 @@ function incrementTodayPomo(): number {
   const today = new Date().toISOString().slice(0, 10)
   try {
     const log: Record<string, number> = JSON.parse(localStorage.getItem('m_pomo_log') || '{}')
-    // Migrate old total counter to today if first time
     if (!log[today] && localStorage.getItem('mp')) {
       // don't migrate total — old mp was cumulative, not per-day
     }
@@ -67,19 +67,20 @@ export function Pomodoro() {
   const pct = ((total - sec) / total) * 100
   const rad = 30, ci = 2 * Math.PI * rad
   const doff = ci - (pct / 100) * ci
-  const col = isBreak ? '#34d399' : '#f87171'
+  const col = isBreak ? 'var(--color-pomo-break)' : 'var(--color-pomo-focus)'
 
   return (
     <div className="flex items-center gap-4">
-      <div className={`relative ${running && !isBreak ? 'pomo-go' : ''}`}>
+      <div className={cn('relative', running && !isBreak && 'pomo-go')}>
         <svg width={70} height={70}>
-          <circle cx={35} cy={35} r={rad} fill="none" stroke="var(--track)" strokeWidth={3} />
+          <circle cx={35} cy={35} r={rad} fill="none" stroke="currentColor" className="text-muted-foreground/10" strokeWidth={3} />
           <circle cx={35} cy={35} r={rad} fill="none" stroke={col} strokeWidth={3} strokeLinecap="round"
             strokeDasharray={ci} strokeDashoffset={doff}
-            style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 1s linear' }} />
+            className="transition-[stroke-dashoffset] duration-1000 ease-linear"
+            style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-mono font-bold tabular-nums" style={{ color: 'var(--text)' }}>
+          <span className="text-sm font-mono font-bold tabular-nums text-foreground">
             {String(mn).padStart(2, '0')}:{String(sc).padStart(2, '0')}
           </span>
           <span className="text-[7px] uppercase tracking-[0.15em] font-semibold mt-0.5" style={{ color: col }}>
@@ -88,17 +89,17 @@ export function Pomodoro() {
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="flex flex-col gap-1.5">
         <div className="flex gap-1">
-          <Button size="icon" variant={running ? 'default' : 'secondary'} className="h-7 w-7" onClick={() => setRunning(r => !r)}>
+          <Button size="icon-sm" variant={running ? 'default' : 'secondary'} onClick={() => setRunning(r => !r)}>
             {running ? <Pause size={11} /> : <Play size={11} />}
           </Button>
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={reset}>
+          <Button size="icon-sm" variant="ghost" onClick={reset}>
             <RotateCcw size={11} />
           </Button>
         </div>
-        <div className="flex items-center gap-1 text-[10px]" style={{ color: 'var(--text-3)' }}>
-          <Flame size={10} className="text-orange-400" />
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Flame size={10} className="text-pomo-focus" aria-hidden="true" />
           <span className="font-mono font-semibold">{todaySessions} today</span>
         </div>
       </div>
